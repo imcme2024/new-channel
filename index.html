@@ -315,8 +315,9 @@ let state={
   shortcutPath:'',shortcutName1:'アプリA',shortcutPath2:'',shortcutName2:'アプリB',rentals:{},rentalHistory:[],
   showModal:false,modalType:'',rentalStep:1,
   currentRental:{wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',status:'pending'},
-  emergencyPopupDismissed:false,
+  emergencyPopupDismissed:false, emergencyStaff:'',
   settingsMasterTab:'device',wardTxFilter:'W7',
+  chError:'',
   listWardFilter:'W7'
 };
 
@@ -361,14 +362,13 @@ function openEmergencyModal(){
   state.modalType='emergency';state.showModal=true;render();
 }
 function confirmEmergencyLaunch(n){
-  const sel=document.getElementById('emergency-staff-select');
-  if(!sel||!sel.value){alert('対応者を選択してください');return;}
-  recordEmergencyAccess(sel.value);
+  if(!state.emergencyStaff){alert('対応者を選択してください');return;}
+  recordEmergencyAccess(state.emergencyStaff);
   state.emergencyPopupDismissed=false;
   state.showModal=false;
+  const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
-  alert(name+'を起動します\n\n⚠️ 作業後に必ず貸出記録を入力してください！');
-  const path=n===2?state.shortcutPath2:state.shortcutPath; if(path)window.open(path);
+  if(path)window.open(path); else alert(name+'が登録されていません');
   render();renderEmergencyPopup();
 }
 function dismissEmergencyPopup(){state.emergencyPopupDismissed=true;renderEmergencyPopup();}
@@ -408,13 +408,43 @@ function getWardTxId(wardKey,monitorId,channel){
 function isOverdue(d){return(Date.now()-new Date(d).getTime())>OVERDUE_DAYS*86400000;}
 function getDaysRented(d){return Math.floor((Date.now()-new Date(d).getTime())/86400000);}
 
+function validateChannel(){
+  const wk=state.currentRental.wardKey;
+  const ch=state.currentRental.channel;
+  if(!ch){state.chError='チャンネル番号を入力してください';render();return;}
+  const ward=wardsConfig[wk];
+  let found=null;
+  ward.monitors.forEach(m=>{if(m.channels.includes(ch))found=m;});
+  if(!found){
+    // 存在しないチャンネル
+    state.chError=`ch ${ch} は${ward.name}に存在しません`;
+    state.currentRental.monitorId='';render();return;
+  }
+  // 貸出中チェック
+  const isRented=Object.values(state.rentals).some(r=>r.wardKey===wk&&r.channel===ch);
+  if(isRented){
+    state.chError=`ch ${ch} は現在貸出中です`;
+    state.currentRental.monitorId='';render();return;
+  }
+  state.chError='';
+  state.currentRental.monitorId=found.id;
+  render();
+}
+
 function startRental(){
-  state.currentRental={wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',status:'pending'};
+  state.currentRental={wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',returnStaff:'',status:'pending'};
+  state.chError='';
   state.rentalStep=1;state.modalType='rental';state.showModal=true;render();
 }
 function nextRentalStep(){
   if(state.rentalStep===1){
-    if(!state.currentRental.wardKey||!state.currentRental.channel){alert('病棟とチャンネルを選択してください');return;}
+    if(!state.currentRental.wardKey){alert('病棟を選択してください');return;}
+    if(!state.currentRental.channel){state.chError='チャンネル番号を入力してください';render();return;}
+    if(!state.currentRental.monitorId){
+      // まだ確認ボタンを押していない場合は自動でバリデーション
+      validateChannel();
+      if(!state.currentRental.monitorId)return;
+    }
     state.rentalStep=2;
   }else if(state.rentalStep===2){
     if(!state.currentRental.deviceId||!state.currentRental.staffName){alert('機器IDと対応者を選択してください');return;}
@@ -436,10 +466,10 @@ function launchChannelApp(n){
 }
 function startReturn(rentalId){state.currentRental={...state.rentals[rentalId]};state.modalType='return';state.showModal=true;render();}
 function confirmReturn(){
-  const sel=document.getElementById('return-staff');
-  if(!sel||!sel.value){alert('返却者を選択してください');return;}
+  const staff=state.currentRental.returnStaff;
+  if(!staff){alert('返却者を選択してください');return;}
   const id=state.currentRental.rentalId;
-  state.rentalHistory.unshift({...state.rentals[id],returnDate:new Date().toISOString(),returnStaff:sel.value});
+  state.rentalHistory.unshift({...state.rentals[id],returnDate:new Date().toISOString(),returnStaff:staff});
   delete state.rentals[id];saveData();state.showModal=false;render();
 }
 
@@ -707,11 +737,14 @@ function renderEmergencyModal(){
       <strong>⚠️ 注意</strong><br>チャンネル変更アプリへの緊急アクセスです。<br>使用後は<strong>必ず貸出記録を入力</strong>してください。
     </div>
     <div class="form-group">
-      <label class="form-label">対応者</label>
-      <select class="form-select" id="emergency-staff-select">
-        <option value="">選択してください</option>
-        ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
-      </select>
+      <label class="form-label">👤 対応者</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+        ${state.staffList.map(s=>`<div onclick="state.emergencyStaff='${s}';render()"
+          style="border:2px solid ${state.emergencyStaff===s?'#dc2626':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${state.emergencyStaff===s?'#fef2f2':'#fff'};transition:all 0.15s;">
+          <div style="font-weight:700;font-size:14px;color:${state.emergencyStaff===s?'#991b1b':'#374151'};">${s}</div>
+          ${state.emergencyStaff===s?`<div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px;">✓</div>`:''}
+        </div>`).join('')}
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button class="btn btn-gray" style="flex:1;" onclick="state.showModal=false;render()">キャンセル</button>
@@ -722,6 +755,12 @@ function renderEmergencyModal(){
 
 function renderRentalModal(){
   const available=getAvailableChannels(state.currentRental.wardKey);
+  const card=(val,label,sub,onclick,sel,small)=>`<div onclick="${onclick}"
+    style="border:2px solid ${sel?'#f59e0b':'#e5e7eb'};border-radius:10px;padding:${small?'8px 6px':'12px 8px'};text-align:center;cursor:pointer;background:${sel?'#fffbeb':'#fff'};transition:all 0.15s;position:relative;">
+    <div style="font-weight:700;font-size:${small?'13px':'15px'};color:${sel?'#92400e':'#374151'};">${label}</div>
+    ${sub?`<div style="font-size:11px;color:#6b7280;margin-top:2px;">${sub}</div>`:''}
+    ${sel?`<div style="font-size:10px;color:#f59e0b;font-weight:700;margin-top:3px;">✓</div>`:''}
+  </div>`;
   return`<div class="modal"><div class="modal-content">
     <div class="modal-header"><h3 class="modal-title">新規貸出</h3><button class="btn btn-gray" onclick="state.showModal=false;render()">✕</button></div>
     <div class="step-indicator">
@@ -733,49 +772,48 @@ function renderRentalModal(){
     ${state.rentalStep===1?`
       ${state.rentalTransmitters.length?`
       <div class="form-group">
-        <label class="form-label">📡 使用する貸出用送信機</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:4px;">
-          ${state.rentalTransmitters.map(t=>{
-            const sel=state.currentRental.rentalTxId===t.id;
-            return`<div onclick="state.currentRental.rentalTxId='${t.id}';render()"
-              style="border:2px solid ${sel?'#f59e0b':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${sel?'#fffbeb':'#fff'};transition:all 0.15s;">
-              <div style="font-weight:700;font-size:15px;color:${sel?'#92400e':'#374151'};">${t.id}</div>
-              ${t.note?`<div style="font-size:11px;color:#6b7280;margin-top:3px;">${t.note}</div>`:''}
-              ${sel?`<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:4px;">✓ 選択中</div>`:''}
-            </div>`;
-          }).join('')}
-          <div onclick="state.currentRental.rentalTxId='';render()"
-            style="border:2px solid ${!state.currentRental.rentalTxId?'#f59e0b':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${!state.currentRental.rentalTxId?'#fffbeb':'#fff'};transition:all 0.15s;">
-            <div style="font-weight:700;font-size:13px;color:${!state.currentRental.rentalTxId?'#92400e':'#9ca3af'};">なし</div>
-            ${!state.currentRental.rentalTxId?`<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:4px;">✓ 選択中</div>`:''}
-          </div>
+        <label class="form-label">📡 貸出用送信機</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+          ${state.rentalTransmitters.map(t=>card(t.id,t.id,t.note||'',`state.currentRental.rentalTxId='${t.id}';render()`,state.currentRental.rentalTxId===t.id,false)).join('')}
+          ${card('','なし','',`state.currentRental.rentalTxId='';render()`,!state.currentRental.rentalTxId,false)}
         </div>
       </div>`:''}
-      <div class="form-group"><label class="form-label">貸出病棟</label>
-        <select class="form-select" onchange="state.currentRental.wardKey=this.value;state.currentRental.channel='';state.currentRental.monitorId='';render()">
-          <option value="">選択してください</option>
-          ${wardKeys.map(wk=>`<option value="${wk}" ${state.currentRental.wardKey===wk?'selected':''}>${wardsConfig[wk].name}</option>`).join('')}
-        </select>
+      <div class="form-group">
+        <label class="form-label">🏥 貸出病棟</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          ${wardKeys.map(wk=>card(wk,wardsConfig[wk].name.replace('病棟',''),'病棟',`state.currentRental.wardKey='${wk}';state.currentRental.channel='';state.currentRental.monitorId='';render()`,state.currentRental.wardKey===wk,false)).join('')}
+        </div>
       </div>
-      ${state.currentRental.wardKey?`<div class="form-group"><label class="form-label">空きチャンネル (${available.length}件)</label>
-        <select class="form-select" onchange="const v=this.value.split('-');state.currentRental.monitorId=parseInt(v[0]);state.currentRental.channel=v[1];">
-          <option value="">選択してください</option>
-          ${available.map(ch=>`<option value="${ch.monitorId}-${ch.channel}" ${state.currentRental.channel===ch.channel&&state.currentRental.monitorId===ch.monitorId?'selected':''}>${ch.monitorName} - ch${ch.channel}</option>`).join('')}
-        </select></div>`:''}
+      ${state.currentRental.wardKey?`
+      <div class="form-group">
+        <label class="form-label">📺 チャンネル番号を入力</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="ch-input" class="form-input" style="font-size:18px;font-weight:700;letter-spacing:0.05em;max-width:160px;"
+            placeholder="例: 2006"
+            value="${state.currentRental.channel||''}"
+            oninput="state.currentRental.channel=this.value.trim();state.currentRental.monitorId='';state.chError='';">
+          <button class="btn btn-primary" style="white-space:nowrap;" onclick="validateChannel()">確認</button>
+        </div>
+        ${state.chError?`<div style="color:#dc2626;font-size:13px;font-weight:700;margin-top:6px;">⚠️ ${state.chError}</div>`:''}
+        ${state.currentRental.monitorId?`<div style="color:#059669;font-size:13px;font-weight:700;margin-top:6px;">✓ ${wardsConfig[state.currentRental.wardKey].monitors.find(m=>m.id===state.currentRental.monitorId)?.name||''}モニタ — 空きチャンネルを確認済み</div>`:''}
+      </div>`:''}
       <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="nextRentalStep()">次へ</button>`:''}
     ${state.rentalStep===2?`
-      <div class="info-box">📍 ${wardsConfig[state.currentRental.wardKey].name} — ch ${state.currentRental.channel}${state.currentRental.rentalTxId?` ／ 送信機: <strong>${state.currentRental.rentalTxId}</strong>`:''}</div>
-      <div class="form-group"><label class="form-label">貸出機器ID</label>
-        <select class="form-select" onchange="state.currentRental.deviceId=this.value">
-          <option value="">選択してください</option>
-          ${state.deviceList.map(d=>`<option value="${d.id}" ${state.currentRental.deviceId===d.id?'selected':''}>${d.id}</option>`).join('')}
-        </select>
+      <div class="info-box" style="font-size:13px;line-height:1.8;">
+        📍 <strong>${wardsConfig[state.currentRental.wardKey].name}</strong> — ch <strong>${state.currentRental.channel}</strong>
+        ${state.currentRental.rentalTxId?` ／ 送信機: <strong>${state.currentRental.rentalTxId}</strong>`:''}
       </div>
-      <div class="form-group"><label class="form-label">対応者</label>
-        <select class="form-select" onchange="state.currentRental.staffName=this.value">
-          <option value="">選択してください</option>
-          ${state.staffList.map(s=>`<option value="${s}" ${state.currentRental.staffName===s?'selected':''}>${s}</option>`).join('')}
-        </select>
+      <div class="form-group">
+        <label class="form-label">🖥 貸出機器</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+          ${state.deviceList.map(d=>card(d.id,d.id,'',`state.currentRental.deviceId='${d.id}';render()`,state.currentRental.deviceId===d.id,false)).join('')}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">👤 対応者</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+          ${state.staffList.map(s=>card(s,s,'',`state.currentRental.staffName='${s}';render()`,state.currentRental.staffName===s,false)).join('')}
+        </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;">
         <button class="btn btn-gray" style="flex:1;" onclick="state.rentalStep=1;render()">戻る</button>
@@ -841,11 +879,14 @@ function renderReturnModal(){
         ${state.currentRental.rentalTxId?`<li>貸出用送信機 (${state.currentRental.rentalTxId}) を回収</li>`:''}
       </ul>
     </div>
-    <div class="form-group"><label class="form-label">返却者</label>
-      <select class="form-select" id="return-staff">
-        <option value="">選択してください</option>
-        ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
-      </select>
+    <div class="form-group"><label class="form-label">👤 返却者</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+        ${state.staffList.map(s=>`<div onclick="state.currentRental.returnStaff='${s}';render()"
+          style="border:2px solid ${state.currentRental.returnStaff===s?'#10b981':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${state.currentRental.returnStaff===s?'#ecfdf5':'#fff'};transition:all 0.15s;">
+          <div style="font-weight:700;font-size:14px;color:${state.currentRental.returnStaff===s?'#065f46':'#374151'};">${s}</div>
+          ${state.currentRental.returnStaff===s?`<div style="font-size:10px;color:#10b981;font-weight:700;margin-top:3px;">✓</div>`:''}
+        </div>`).join('')}
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px;">
       <button class="btn btn-gray" style="flex:1;" onclick="state.showModal=false;render()">キャンセル</button>
