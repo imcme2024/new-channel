@@ -512,7 +512,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理</div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v8</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
