@@ -368,7 +368,7 @@ function confirmEmergencyLaunch(n){
   state.showModal=false;
   const name=n===2?state.shortcutName2:state.shortcutName1;
   alert(name+'を起動します\n\n⚠️ 作業後に必ず貸出記録を入力してください！');
-  // const path=n===2?state.shortcutPath2:state.shortcutPath; window.open(path);
+  const path=n===2?state.shortcutPath2:state.shortcutPath; if(path)window.open(path);
   render();renderEmergencyPopup();
 }
 function dismissEmergencyPopup(){state.emergencyPopupDismissed=true;renderEmergencyPopup();}
@@ -432,8 +432,7 @@ function launchChannelApp(n){
   const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
   if(!path){alert(name+'が登録されていません\n設定タブから登録してください');return;}
-  alert(name+'を起動します\n\n設定チャンネル：'+state.currentRental.channel);
-  // window.open(path);
+  window.open(path);
 }
 function startReturn(rentalId){state.currentRental={...state.rentals[rentalId]};state.modalType='return';state.showModal=true;render();}
 function confirmReturn(){
@@ -732,6 +731,26 @@ function renderRentalModal(){
       <div class="step ${state.rentalStep===4?'step-active':''}">4.確定</div>
     </div>
     ${state.rentalStep===1?`
+      ${state.rentalTransmitters.length?`
+      <div class="form-group">
+        <label class="form-label">📡 使用する貸出用送信機</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:4px;">
+          ${state.rentalTransmitters.map(t=>{
+            const sel=state.currentRental.rentalTxId===t.id;
+            return`<div onclick="state.currentRental.rentalTxId='${t.id}';render()"
+              style="border:2px solid ${sel?'#f59e0b':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${sel?'#fffbeb':'#fff'};transition:all 0.15s;">
+              <div style="font-weight:700;font-size:15px;color:${sel?'#92400e':'#374151'};">${t.id}</div>
+              ${t.note?`<div style="font-size:11px;color:#6b7280;margin-top:3px;">${t.note}</div>`:''}
+              ${sel?`<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:4px;">✓ 選択中</div>`:''}
+            </div>`;
+          }).join('')}
+          <div onclick="state.currentRental.rentalTxId='';render()"
+            style="border:2px solid ${!state.currentRental.rentalTxId?'#f59e0b':'#e5e7eb'};border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;background:${!state.currentRental.rentalTxId?'#fffbeb':'#fff'};transition:all 0.15s;">
+            <div style="font-weight:700;font-size:13px;color:${!state.currentRental.rentalTxId?'#92400e':'#9ca3af'};">なし</div>
+            ${!state.currentRental.rentalTxId?`<div style="font-size:11px;color:#f59e0b;font-weight:700;margin-top:4px;">✓ 選択中</div>`:''}
+          </div>
+        </div>
+      </div>`:''}
       <div class="form-group"><label class="form-label">貸出病棟</label>
         <select class="form-select" onchange="state.currentRental.wardKey=this.value;state.currentRental.channel='';state.currentRental.monitorId='';render()">
           <option value="">選択してください</option>
@@ -741,26 +760,21 @@ function renderRentalModal(){
       ${state.currentRental.wardKey?`<div class="form-group"><label class="form-label">空きチャンネル (${available.length}件)</label>
         <select class="form-select" onchange="const v=this.value.split('-');state.currentRental.monitorId=parseInt(v[0]);state.currentRental.channel=v[1];">
           <option value="">選択してください</option>
-          ${available.map(ch=>`<option value="${ch.monitorId}-${ch.channel}">${ch.monitorName} - ch${ch.channel}</option>`).join('')}
+          ${available.map(ch=>`<option value="${ch.monitorId}-${ch.channel}" ${state.currentRental.channel===ch.channel&&state.currentRental.monitorId===ch.monitorId?'selected':''}>${ch.monitorName} - ch${ch.channel}</option>`).join('')}
         </select></div>`:''}
       <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="nextRentalStep()">次へ</button>`:''}
     ${state.rentalStep===2?`
-      <div class="info-box">📍 ${wardsConfig[state.currentRental.wardKey].name} — ch ${state.currentRental.channel}</div>
+      <div class="info-box">📍 ${wardsConfig[state.currentRental.wardKey].name} — ch ${state.currentRental.channel}${state.currentRental.rentalTxId?` ／ 送信機: <strong>${state.currentRental.rentalTxId}</strong>`:''}</div>
       <div class="form-group"><label class="form-label">貸出機器ID</label>
         <select class="form-select" onchange="state.currentRental.deviceId=this.value">
           <option value="">選択してください</option>
-          ${state.deviceList.map(d=>`<option value="${d.id}">${d.id}</option>`).join('')}
+          ${state.deviceList.map(d=>`<option value="${d.id}" ${state.currentRental.deviceId===d.id?'selected':''}>${d.id}</option>`).join('')}
         </select>
       </div>
-      ${state.rentalTransmitters.length?`<div class="form-group"><label class="form-label">使用する貸出用送信機</label>
-        <select class="form-select" onchange="state.currentRental.rentalTxId=this.value">
-          <option value="">選択してください</option>
-          ${state.rentalTransmitters.map(t=>`<option value="${t.id}">${t.id}${t.note?' ('+t.note+')':''}</option>`).join('')}
-        </select></div>`:''}
       <div class="form-group"><label class="form-label">対応者</label>
         <select class="form-select" onchange="state.currentRental.staffName=this.value">
           <option value="">選択してください</option>
-          ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          ${state.staffList.map(s=>`<option value="${s}" ${state.currentRental.staffName===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;">
