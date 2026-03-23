@@ -368,7 +368,8 @@ function confirmEmergencyLaunch(n){
   state.showModal=false;
   const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
-  if(path)location.href=path; else alert(name+'が登録されていません');
+  if(path){const a=document.createElement('a');a.href=path;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+  else alert(name+'が登録されていません');
   render();renderEmergencyPopup();
 }
 function dismissEmergencyPopup(){state.emergencyPopupDismissed=true;renderEmergencyPopup();}
@@ -462,7 +463,11 @@ function launchChannelApp(n){
   const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
   if(!path){alert(name+'が登録されていません\n設定タブから登録してください');return;}
-  location.href=path;
+  const a=document.createElement('a');
+  a.href=path;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 function startReturn(rentalId){state.currentRental={...state.rentals[rentalId]};state.modalType='return';state.showModal=true;render();}
 function confirmReturn(){
@@ -512,7 +517,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v8</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v9</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
