@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>モニタ貸出管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP',sans-serif;background:linear-gradient(135deg,#fef3c7 0%,#fde68a 50%,#fcd34d 100%);min-height:100vh;padding:8px;font-size:14px;}
+.container{max-width:1200px;margin:0 auto;}
+.card{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,0.1);padding:16px;margin-bottom:12px;}
+.title{font-size:22px;font-weight:900;color:#111827;}
+.btn{padding:10px 18px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;transition:all 0.18s;box-shadow:0 2px 6px rgba(0,0,0,0.1);font-family:'Noto Sans JP',sans-serif;}
+.btn-primary{background:#f59e0b;color:#fff;}
+.btn-primary:hover{background:#d97706;transform:translateY(-1px);}
+.btn-primary:disabled{background:#d1d5db;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-success{background:#10b981;color:#fff;}
+.btn-success:hover{background:#059669;transform:translateY(-1px);}
+.btn-danger{background:#ef4444;color:#fff;}
+.btn-danger:hover{background:#dc2626;transform:translateY(-1px);}
+.btn-gray{background:#e5e7eb;color:#374151;}
+.btn-gray:hover{background:#d1d5db;}
+.btn-emergency{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-size:15px;padding:14px 24px;border-radius:12px;box-shadow:0 4px 14px rgba(220,38,38,0.45);letter-spacing:0.05em;animation:emergencyPulse 2.5s ease-in-out infinite;}
+.btn-emergency:hover{background:linear-gradient(135deg,#b91c1c,#991b1b);transform:translateY(-2px);}
+@keyframes emergencyPulse{0%,100%{box-shadow:0 4px 14px rgba(220,38,38,0.45);}50%{box-shadow:0 4px 22px rgba(220,38,38,0.7);}}
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid #e5e7eb;padding-bottom:8px;}
+.tab{padding:9px 16px;border:none;background:none;cursor:pointer;font-weight:700;color:#6b7280;border-bottom:3px solid transparent;transition:all 0.18s;font-family:'Noto Sans JP',sans-serif;font-size:13px;}
+.tab-active{color:#f59e0b;border-bottom-color:#f59e0b;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:700;color:#374151;margin-bottom:5px;display:block;}
+.form-input,.form-select{width:100%;padding:10px 13px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;font-family:'Noto Sans JP',sans-serif;transition:border-color 0.15s;}
+.form-input:focus,.form-select:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.12);}
+.list-item{background:#f9fafb;padding:10px 14px;border-radius:8px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.list-item-name{font-weight:600;color:#111827;}
+.rental-card{background:#fff;border:2px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.18s;}
+.rental-card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.1);transform:translateY(-2px);border-color:#f59e0b;}
+.rental-card-overdue{border-color:#f97316 !important;background:#fff7ed;}
+.rental-card-overdue:hover{border-color:#ea580c !important;}
+.rental-status{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;}
+.status-pending{background:#fef3c7;color:#92400e;}
+.status-confirmed{background:#d1fae5;color:#065f46;}
+.overdue-badge{display:inline-block;background:#fed7aa;color:#9a3412;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-left:6px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px;}
+.modal-content{background:#fff;border-radius:16px;padding:24px;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-title{font-size:19px;font-weight:700;}
+.step-indicator{display:flex;gap:8px;margin-bottom:20px;}
+.step{flex:1;text-align:center;padding:10px 4px;border-radius:8px;background:#f3f4f6;font-weight:700;color:#9ca3af;font-size:12px;}
+.step-active{background:#fef3c7;color:#92400e;}
+.step-complete{background:#d1fae5;color:#065f46;}
+.info-box{background:#fffbeb;border:2px solid #fcd34d;border-radius:8px;padding:12px;margin-bottom:14px;}
+.emergency-popup{position:fixed;top:0;left:0;right:0;z-index:1000;padding:12px 16px;background:linear-gradient(135deg,#7f1d1d,#991b1b);color:#fff;box-shadow:0 4px 20px rgba(127,29,29,0.5);animation:slideDown 0.35s ease;}
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.emergency-popup-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.emergency-popup-text{flex:1;min-width:200px;}
+.emergency-popup-title{font-size:15px;font-weight:900;margin-bottom:3px;}
+.emergency-popup-sub{font-size:12px;opacity:0.85;line-height:1.6;}
+.weekly-check-banner{background:#dc2626;color:#fff;padding:14px 16px;border-radius:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(220,38,38,0.3);}
+.history-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.history-table th{background:#f9fafb;padding:9px 10px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;border-bottom:2px solid #e5e7eb;}
+.history-table td{padding:9px 10px;border-bottom:1px solid #f3f4f6;font-size:12px;}
+.inline-form-card{background:linear-gradient(135deg,#fff9e6,#fff);border:2px solid #fcd34d;border-radius:14px;padding:18px;margin-bottom:12px;}
+.inline-form-title{font-size:16px;font-weight:900;color:#92400e;margin-bottom:14px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr;}}
+.section-label{font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+.tx-badge{display:inline-block;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;}
+.drop-zone{border:3px dashed #d1d5db;border-radius:12px;padding:30px;text-align:center;color:#6b7280;cursor:pointer;transition:all 0.18s;}
+.drop-zone:hover,.drop-zone.dragover{border-color:#f59e0b;background:#fffbeb;color:#f59e0b;}
+</style>
+</head>
+<body>
+<div id="emergency-popup-container"></div>
+<div class="container" id="app"></div>
+<script>
+const wardsConfig={
+  W7:{name:'西7病棟',floor:'7',monitors:[
+    {id:1,name:'①',channels:['2006','2008','2012','6051','2046','2049','2061','2074','2081','2091','5009','5027']},
+    {id:2,name:'②',channels:['5032','5039','5060','4009','4027','4032','4039','4060']}
+  ]},
+  E7:{name:'東7病棟',floor:'7',monitors:[
+    {id:1,name:'①',channels:['1049','1054','1072','3004','3008','3013','3026','3038','2010','2014','2051','2083']},
+    {id:2,name:'②',channels:['2093','2017','2019','2072','2085','2102','4029','4036','4077','5029','5036','5077']},
+    {id:3,name:'③',channels:['1006','1014','1024','1029','1061','1074','1001','1004']}
+  ]},
+  W6:{name:'西6病棟',floor:'6',monitors:[
+    {id:1,name:'①',channels:['2001','2024','2029','2038','2054','2064','2076','2095','2097','2108','2112','2115']},
+    {id:2,name:'②',channels:['1008','1016','1026','1031','1038','1059','1063','1065','1076','1079','4001','4015']},
+    {id:3,name:'③',channels:['4017','4021','4042','4049','4054','4064','4072','3002','3006','3011','3017','3024']},
+    {id:4,name:'④',channels:['3034','3036','5006','5017','5019','5023','5044','5051','5056','5066','5074','フリー']}
+  ]},
+  E6:{name:'東6病棟',floor:'6',monitors:[
+    {id:1,name:'①',channels:['4056','4066','4074','2003','2026','4003','4006','4019','4023','4044','4051','5001']},
+    {id:2,name:'②',channels:['5004','5015','5021','5042','5049','5054','5064','5072']},
+    {id:3,name:'③',channels:['2031','2040','2056','2066','2078','2099','2110','2117']}
+  ]},
+  W5:{name:'西5病棟',floor:'5',monitors:[
+    {id:1,name:'①',channels:['4010','4028','4033','4040','4061','4078','5010','5028','5033','5040']},
+    {id:2,name:'②',channels:['5061','5078','2007','2009','2013','2036','2047','2050','2062','2082']},
+    {id:3,name:'③',channels:['2092','2016','2018','2022','2045','2071','2084','2101']}
+  ]},
+  E5:{name:'東5病棟',floor:'5',monitors:[
+    {id:1,name:'①',channels:['5008','5026','5031','5038','5059','5076','4008','4026']},
+    {id:2,name:'②',channels:['4031','4038','4059','4076','2005','2033','2042','2058']},
+    {id:3,name:'③',channels:['2068','2080','2119','1002','1005','1018','1022','1043']}
+  ]}
+};
+const wardKeys=['W7','E7','W6','E6','W5','E5'];
+const OVERDUE_DAYS=30;
+
+// 病棟固定送信機 初期値（無線テレメータ内訳表より）
+// キー: "{wardKey}-{monitorId}-{channel}"  値: 院内ID
+const DEFAULT_WARD_TX={
+  // 西7①
+  'W7-1-2006':'TM111','W7-1-2008':'TM119','W7-1-2012':'TM121',
+  'W7-1-6051':'TM127','W7-1-2046':'TM136','W7-1-2049':'TM141',
+  'W7-1-2061':'TM662','W7-1-2074':'TM663','W7-1-2081':'TM665',
+  'W7-1-2091':'TM666','W7-1-5009':'TM667','W7-1-5027':'TM668',
+  // 西7②
+  'W7-2-5032':'TM1196','W7-2-5039':'TM1197','W7-2-5060':'TM1195',
+  'W7-2-4009':'TM1192','W7-2-4027':'TM1194','W7-2-4032':'TM1193',
+  'W7-2-4039':'TM1198','W7-2-4060':'TM1191',
+  // 東7①
+  'E7-1-1049':'TM672','E7-1-1054':'TM673','E7-1-1072':'TM674',
+  'E7-1-3004':'TM675','E7-1-3008':'TM676','E7-1-3013':'TM692',
+  'E7-1-3026':'TM693','E7-1-3038':'TM202','E7-1-2010':'TM204',
+  'E7-1-2014':'TM205','E7-1-2051':'TM206','E7-1-2083':'TM209',
+  // 東7②
+  'E7-2-2093':'TM606','E7-2-2017':'TM607','E7-2-2019':'TM610',
+  'E7-2-2072':'TM611','E7-2-2085':'TM616','E7-2-2102':'TM629',
+  'E7-2-4029':'TM636','E7-2-4036':'TM637','E7-2-4077':'TM639',
+  'E7-2-5029':'TM642','E7-2-5036':'TM646','E7-2-5077':'TM647',
+  // 東7③
+  'E7-3-1006':'TM1143','E7-3-1014':'TM1145','E7-3-1024':'TM1148',
+  'E7-3-1029':'TM1138','E7-3-1061':'TM1151','E7-3-1074':'TM1142',
+  'E7-3-1001':'TM664','E7-3-1004':'TM669',
+  // 西6①
+  'W6-1-2001':'TM1172','W6-1-2024':'TM1177','W6-1-2029':'TM1179',
+  'W6-1-2038':'TM1180','W6-1-2054':'TM1182','W6-1-2064':'TM1190',
+  'W6-1-2076':'TM1188','W6-1-2095':'TM1186','W6-1-2097':'TM1187',
+  'W6-1-2108':'TM1189','W6-1-2112':'TM1185','W6-1-2115':'TM1178',
+  // 西6②
+  'W6-2-1008':'TM1167','W6-2-1016':'TM1168','W6-2-1026':'TM1169',
+  'W6-2-1031':'TM1174','W6-2-1038':'TM1171','W6-2-1059':'TM1175',
+  'W6-2-1063':'TM1176','W6-2-1065':'TM1173','W6-2-1076':'TM1154',
+  'W6-2-1079':'TM1155','W6-2-4001':'TM1161','W6-2-4015':'TM1159',
+  // 西6③
+  'W6-3-4017':'TM1158','W6-3-4021':'TM1140','W6-3-4042':'TM1164',
+  'W6-3-4049':'TM1156','W6-3-4054':'TM1146','W6-3-4064':'TM1150',
+  'W6-3-4072':'TM1139','W6-3-3002':'TM1157','W6-3-3006':'TM1162',
+  'W6-3-3011':'TM1165','W6-3-3017':'TM1160','W6-3-3024':'TM1163',
+  // 西6④
+  'W6-4-3034':'TM1134','W6-4-3036':'TM1135','W6-4-5006':'TM1137',
+  'W6-4-5017':'TM1126','W6-4-5019':'TM1152','W6-4-5023':'TM1136',
+  'W6-4-5044':'TM1128','W6-4-5051':'TM1127','W6-4-5056':'TM1130',
+  'W6-4-5066':'TM1129','W6-4-5074':'TM1131',
+  // 東6①
+  'E6-1-4056':'TM1181','E6-1-4066':'TM1183','E6-1-4074':'TM1184',
+  'E6-1-2003':'TM1166','E6-1-2026':'TM1170','E6-1-4003':'TM686',
+  'E6-1-4006':'TM687','E6-1-4019':'TM688','E6-1-4023':'TM689',
+  'E6-1-4044':'TM690','E6-1-4051':'TM691','E6-1-5001':'TM677',
+  // 東6②
+  'E6-2-5004':'TM678','E6-2-5015':'TM679','E6-2-5021':'TM680',
+  'E6-2-5042':'TM681','E6-2-5049':'TM682','E6-2-5054':'TM683',
+  'E6-2-5064':'TM684','E6-2-5072':'TM685',
+  // 東6③
+  'E6-3-2031':'TM1141','E6-3-2040':'TM1144','E6-3-2056':'TM1132',
+  'E6-3-2066':'TM1133','E6-3-2078':'TM1153','E6-3-2099':'TM612',
+  'E6-3-2110':'TM627','E6-3-2117':'TM648',
+  // 西5①
+  'W5-1-4010':'TM1101','W5-1-4028':'TM1125','W5-1-4033':'TM1124',
+  'W5-1-4040':'TM1117','W5-1-4061':'TM1105','W5-1-4078':'TM1106',
+  'W5-1-5010':'TM1107','W5-1-5028':'TM1108','W5-1-5033':'TM1118',
+  'W5-1-5040':'TM1110',
+  // 西5②
+  'W5-2-5061':'TM1111','W5-2-5078':'TM1112','W5-2-2007':'TM1119',
+  'W5-2-2009':'TM1114','W5-2-2013':'TM1120','W5-2-2036':'TM1116',
+  'W5-2-2047':'TM1122','W5-2-2050':'TM1123','W5-2-2062':'BM164',
+  'W5-2-2082':'BM163',
+  // 西5③
+  'W5-3-2092':'TM622','W5-3-2016':'TM623','W5-3-2018':'TM624',
+  'W5-3-2022':'TM625','W5-3-2045':'TM628','W5-3-2071':'TM630',
+  'W5-3-2084':'TM633','W5-3-2101':'TM634',
+  // 東5①
+  'E5-1-5008':'TM649','E5-1-5026':'TM650','E5-1-5031':'TM696',
+  'E5-1-5038':'TM605','E5-1-5059':'TM608','E5-1-5076':'TM609',
+  'E5-1-4008':'TM613','E5-1-4026':'TM614',
+  // 東5②
+  'E5-2-4031':'TM618','E5-2-4038':'TM619','E5-2-4059':'TM620',
+  'E5-2-4076':'TM621','E5-2-2005':'TM108','E5-2-2033':'TM110',
+  'E5-2-2042':'TM117','E5-2-2058':'TM114',
+  // 東5③
+  'E5-3-2068':'TM115','E5-3-2080':'TM120','E5-3-2119':'TM122',
+  'E5-3-1002':'TM126','E5-3-1005':'TM133','E5-3-1018':'TM134',
+  'E5-3-1022':'TM113','E5-3-1043':'TM140'
+};
+
+// 送信機詳細情報（機種・シリアル）— 一覧表示用
+const WARD_TX_DETAIL={
+  // 西7①
+  'W7-1-2006':{model:'ZS910P',serial:'15515BH'},'W7-1-2008':{model:'ZS910P',serial:'15795BH'},
+  'W7-1-2012':{model:'ZS910P',serial:'15797BH'},'W7-1-6051':{model:'ZS910P',serial:'16304BH'},
+  'W7-1-2046':{model:'ZS910P',serial:'13613BH'},'W7-1-2049':{model:'ZS910P',serial:'16318BH'},
+  'W7-1-2061':{model:'ZS610P',serial:'10199AF'},'W7-1-2074':{model:'ZS610P',serial:'10200AF'},
+  'W7-1-2081':{model:'ZS610P',serial:'10202AF'},'W7-1-2091':{model:'ZS610P',serial:'10203AF'},
+  'W7-1-5009':{model:'ZS610P',serial:'10204AF'},'W7-1-5027':{model:'ZS610P',serial:'10205AF'},
+  // 西7②
+  'W7-2-5032':{model:'ZS630P',serial:'128440'},'W7-2-5039':{model:'ZS630P',serial:'128441'},
+  'W7-2-5060':{model:'ZS630P',serial:'128439'},'W7-2-4009':{model:'ZS630P',serial:'128436'},
+  'W7-2-4027':{model:'ZS630P',serial:'128438'},'W7-2-4032':{model:'ZS630P',serial:'128437'},
+  'W7-2-4039':{model:'ZS630P',serial:'128442'},'W7-2-4060':{model:'ZS630P',serial:'128435'},
+  // 東7①
+  'E7-1-1049':{model:'ZS610P',serial:'10209AF'},'E7-1-1054':{model:'ZS610P',serial:'10210AF'},
+  'E7-1-1072':{model:'ZS610P',serial:'10211AF'},'E7-1-3004':{model:'ZS610P',serial:'10212AF'},
+  'E7-1-3008':{model:'ZS620P',serial:'05023AF'},'E7-1-3013':{model:'ZS620P',serial:'05039AF'},
+  'E7-1-3026':{model:'ZS620P',serial:'05040AF'},'E7-1-3038':{model:'ZS920P',serial:'04975AB'},
+  'E7-1-2010':{model:'ZS920P',serial:'04977AB'},'E7-1-2014':{model:'ZS920P',serial:'04978AB'},
+  'E7-1-2051':{model:'ZS920P',serial:'04979AB'},'E7-1-2083':{model:'ZS920P',serial:'04982AB'},
+  // 東7②
+  'E7-2-2093':{model:'ZS630P',serial:'07841AA'},'E7-2-2017':{model:'ZS630P',serial:'07842AA'},
+  'E7-2-2019':{model:'ZS630P',serial:'51322AH'},'E7-2-2072':{model:'ZS630P',serial:'53192AH'},
+  'E7-2-2085':{model:'ZS630P',serial:'53198AH'},'E7-2-2102':{model:'ZS630P',serial:'88997AH'},
+  'E7-2-4029':{model:'ZS630P',serial:'97095'},'E7-2-4036':{model:'ZS630P',serial:'105103'},
+  'E7-2-4077':{model:'ZS630P',serial:'105346'},'E7-2-5029':{model:'ZS630P',serial:'105349'},
+  'E7-2-5036':{model:'ZS630P',serial:'105353'},'E7-2-5077':{model:'ZS630P',serial:'105354'},
+  // 東7③
+  'E7-3-1006':{model:'ZS610P',serial:'14224'},'E7-3-1014':{model:'ZS610P',serial:'14226'},
+  'E7-3-1024':{model:'ZS610P',serial:'14229'},'E7-3-1029':{model:'ZS610P',serial:'14219'},
+  'E7-3-1061':{model:'ZS610P',serial:'14232'},'E7-3-1074':{model:'ZS610P',serial:'14223'},
+  'E7-3-1001':{model:'ZS610P',serial:'10201AF'},'E7-3-1004':{model:'ZS610P',serial:'10206AF'},
+  // 西6①
+  'W6-1-2001':{model:'ZS630P',serial:'126732'},'W6-1-2024':{model:'ZS630P',serial:'126737'},
+  'W6-1-2029':{model:'ZS630P',serial:'126739'},'W6-1-2038':{model:'ZS630P',serial:'126740'},
+  'W6-1-2054':{model:'ZS630P',serial:'126742'},'W6-1-2064':{model:'ZS630P',serial:'126750'},
+  'W6-1-2076':{model:'ZS630P',serial:'126748'},'W6-1-2095':{model:'ZS630P',serial:'126746'},
+  'W6-1-2097':{model:'ZS630P',serial:'126747'},'W6-1-2108':{model:'ZS630P',serial:'126749'},
+  'W6-1-2112':{model:'ZS630P',serial:'126745'},'W6-1-2115':{model:'ZS630P',serial:'126738'},
+  // 西6②
+  'W6-2-1008':{model:'ZS630P',serial:'126727'},'W6-2-1016':{model:'ZS630P',serial:'126728'},
+  'W6-2-1026':{model:'ZS630P',serial:'126729'},'W6-2-1031':{model:'ZS630P',serial:'126734'},
+  'W6-2-1038':{model:'ZS630P',serial:'126731'},'W6-2-1059':{model:'ZS630P',serial:'126735'},
+  'W6-2-1063':{model:'ZS630P',serial:'126736'},'W6-2-1065':{model:'ZS630P',serial:'126733'},
+  'W6-2-1076':{model:'ZS610P',serial:'14235'},'W6-2-1079':{model:'ZS610P',serial:'14236'},
+  'W6-2-4001':{model:'ZS610P',serial:'14255'},'W6-2-4015':{model:'ZS610P',serial:'14253'},
+  // 西6③
+  'W6-3-4017':{model:'ZS610P',serial:'14252'},'W6-3-4021':{model:'ZS610P',serial:'14221'},
+  'W6-3-4042':{model:'ZS610P',serial:'14258'},'W6-3-4049':{model:'ZS610P',serial:'14237'},
+  'W6-3-4054':{model:'ZS610P',serial:'14227'},'W6-3-4064':{model:'ZS610P',serial:'14231'},
+  'W6-3-4072':{model:'ZS610P',serial:'14220'},'W6-3-3002':{model:'ZS610P',serial:'14238'},
+  'W6-3-3006':{model:'ZS610P',serial:'14256'},'W6-3-3011':{model:'ZS610P',serial:'14259'},
+  'W6-3-3017':{model:'ZS610P',serial:'14254'},'W6-3-3024':{model:'ZS610P',serial:'14257'},
+  // 西6④
+  'W6-4-3034':{model:'ZS610P',serial:'14215'},'W6-4-3036':{model:'ZS610P',serial:'14216'},
+  'W6-4-5006':{model:'ZS610P',serial:'14218'},'W6-4-5017':{model:'ZS610P',serial:'14207'},
+  'W6-4-5019':{model:'ZS610P',serial:'14233'},'W6-4-5023':{model:'ZS610P',serial:'14217'},
+  'W6-4-5044':{model:'ZS610P',serial:'14209'},'W6-4-5051':{model:'ZS610P',serial:'14208'},
+  'W6-4-5056':{model:'ZS610P',serial:'14211'},'W6-4-5066':{model:'ZS610P',serial:'14210'},
+  'W6-4-5074':{model:'ZS610P',serial:'14212'},
+  // 東6①
+  'E6-1-4056':{model:'ZS630P',serial:'126741'},'E6-1-4066':{model:'ZS630P',serial:'126743'},
+  'E6-1-4074':{model:'ZS630P',serial:'126744'},'E6-1-2003':{model:'ZS630P',serial:'126726'},
+  'E6-1-2026':{model:'ZS630P',serial:'126730'},'E6-1-4003':{model:'ZS620P',serial:'05033AF'},
+  'E6-1-4006':{model:'ZS620P',serial:'05034AF'},'E6-1-4019':{model:'ZS620P',serial:'05035AF'},
+  'E6-1-4023':{model:'ZS620P',serial:'05036AF'},'E6-1-4044':{model:'ZS620P',serial:'05037AF'},
+  'E6-1-4051':{model:'ZS620P',serial:'05038AF'},'E6-1-5001':{model:'ZS620P',serial:'05024AF'},
+  // 東6②
+  'E6-2-5004':{model:'ZS620P',serial:'05025AF'},'E6-2-5015':{model:'ZS620P',serial:'05026AF'},
+  'E6-2-5021':{model:'ZS620P',serial:'05027AF'},'E6-2-5042':{model:'ZS620P',serial:'05028AF'},
+  'E6-2-5049':{model:'ZS620P',serial:'05029AF'},'E6-2-5054':{model:'ZS620P',serial:'05030AF'},
+  'E6-2-5064':{model:'ZS620P',serial:'05031AF'},'E6-2-5072':{model:'ZS620P',serial:'05032AF'},
+  // 東6③
+  'E6-3-2031':{model:'ZS610P',serial:'14222'},'E6-3-2040':{model:'ZS610P',serial:'14225'},
+  'E6-3-2056':{model:'ZS610P',serial:'14213'},'E6-3-2066':{model:'ZS610P',serial:'14214'},
+  'E6-3-2078':{model:'ZS610P',serial:'14234'},'E6-3-2099':{model:'ZS630P',serial:'53193AH'},
+  'E6-3-2110':{model:'ZS630P',serial:'88995AH'},'E6-3-2117':{model:'ZS630P',serial:'105355'},
+  // 西5①
+  'W5-1-4010':{model:'LX-8300',serial:'50000636'},'W5-1-4028':{model:'LX-8300',serial:'50000865'},
+  'W5-1-4033':{model:'LX-8300',serial:'50000659'},'W5-1-4040':{model:'LX-8300',serial:'50000652'},
+  'W5-1-4061':{model:'LX-8300',serial:'50000640'},'W5-1-4078':{model:'LX-8300',serial:'50000641'},
+  'W5-1-5010':{model:'LX-8300',serial:'50000642'},'W5-1-5028':{model:'LX-8300',serial:'50000643'},
+  'W5-1-5033':{model:'LX-8300',serial:'50000653'},'W5-1-5040':{model:'LX-8300',serial:'50000645'},
+  // 西5②
+  'W5-2-5061':{model:'LX-8300',serial:'50000646'},'W5-2-5078':{model:'LX-8300',serial:'50000647'},
+  'W5-2-2007':{model:'LX-8300',serial:'50000654'},'W5-2-2009':{model:'LX-8300',serial:'50000649'},
+  'W5-2-2013':{model:'LX-8300',serial:'50000655'},'W5-2-2036':{model:'LX-8300',serial:'50000651'},
+  'W5-2-2047':{model:'LX-8300',serial:'50000657'},'W5-2-2050':{model:'LX-8300',serial:'50000658'},
+  'W5-2-2062':{model:'LX-8302',serial:'50010194'},'W5-2-2082':{model:'LX-8302',serial:'50010174'},
+  // 西5③
+  'W5-3-2092':{model:'ZS630P',serial:'85909AH'},'W5-3-2016':{model:'ZS630P',serial:'85910AH'},
+  'W5-3-2018':{model:'ZS630P',serial:'85911AH'},'W5-3-2022':{model:'ZS630P',serial:'85912AH'},
+  'W5-3-2045':{model:'ZS630P',serial:'88996AH'},'W5-3-2071':{model:'ZS630P',serial:'88998AH'},
+  'W5-3-2084':{model:'ZS630P',serial:'89001AH'},'W5-3-2101':{model:'ZS630P',serial:'97093'},
+  // 東5①
+  'E5-1-5008':{model:'ZS630P',serial:'105356'},'E5-1-5026':{model:'ZS630P',serial:'105357'},
+  'E5-1-5031':{model:'ZS630P',serial:'105358'},'E5-1-5038':{model:'ZS630P',serial:'07840AA'},
+  'E5-1-5059':{model:'ZS630P',serial:'07843AA'},'E5-1-5076':{model:'ZS630P',serial:'53120AH'},
+  'E5-1-4008':{model:'ZS630P',serial:'53194AH'},'E5-1-4026':{model:'ZS630P',serial:'53196AH'},
+  // 東5②
+  'E5-2-4031':{model:'ZS630P',serial:'53201AH'},'E5-2-4038':{model:'ZS630P',serial:'63361AH'},
+  'E5-2-4059':{model:'ZS630P',serial:'63363AH'},'E5-2-4076':{model:'ZS630P',serial:'63364AH'},
+  'E5-2-2005':{model:'ZS910P',serial:'09231AB'},'E5-2-2033':{model:'ZS910P',serial:'15514BH'},
+  'E5-2-2042':{model:'ZS910P',serial:'15793BH'},'E5-2-2058':{model:'ZS910P',serial:'15790BH'},
+  // 東5③
+  'E5-3-2068':{model:'ZS910P',serial:'15791BH'},'E5-3-2080':{model:'ZS910P',serial:'15796BH'},
+  'E5-3-2119':{model:'ZS910P',serial:'16297BH'},'E5-3-1002':{model:'ZS910P',serial:'16303BH'},
+  'E5-3-1005':{model:'ZS910P',serial:'16310BH'},'E5-3-1018':{model:'ZS910P',serial:'16311BH'},
+  'E5-3-1022':{model:'ZS910P',serial:'15789BH'},'E5-3-1043':{model:'ZS910P',serial:'16317BH'}
+};
+
+let state={
+  currentTab:'rental',
+  deviceList:[],staffList:[],
+  rentalTransmitters:[],wardTransmitters:{},
+  shortcutPath:'',shortcutName1:'アプリA',shortcutPath2:'',shortcutName2:'アプリB',rentals:{},rentalHistory:[],
+  showModal:false,modalType:'',rentalStep:1,
+  currentRental:{wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',status:'pending'},
+  emergencyPopupDismissed:false,
+  settingsMasterTab:'device',wardTxFilter:'W7',
+  listWardFilter:'W7'
+};
+
+function loadData(){
+  const m={rental_devices:'deviceList',rental_staff:'staffList',rental_active:'rentals',rental_history:'rentalHistory',rental_tx_master:'rentalTransmitters',ward_tx_master:'wardTransmitters'};
+  Object.entries(m).forEach(([k,p])=>{const v=localStorage.getItem(k);if(v)state[p]=JSON.parse(v);});
+  state.shortcutPath=localStorage.getItem('rental_shortcut')||'';
+  state.shortcutName1=localStorage.getItem('rental_shortcut_name1')||'アプリA';
+  state.shortcutPath2=localStorage.getItem('rental_shortcut2')||'';
+  state.shortcutName2=localStorage.getItem('rental_shortcut_name2')||'アプリB';
+  // 未登録キーをデフォルト値で補完（手動編集済みのキーは上書きしない）
+  let updated=false;
+  Object.entries(DEFAULT_WARD_TX).forEach(([k,v])=>{if(!state.wardTransmitters[k]){state.wardTransmitters[k]=v;updated=true;}});
+  if(updated)localStorage.setItem('ward_tx_master',JSON.stringify(state.wardTransmitters));
+}
+function saveData(){
+  localStorage.setItem('rental_devices',JSON.stringify(state.deviceList));
+  localStorage.setItem('rental_staff',JSON.stringify(state.staffList));
+  localStorage.setItem('rental_shortcut',state.shortcutPath);
+  localStorage.setItem('rental_shortcut_name1',state.shortcutName1);
+  localStorage.setItem('rental_shortcut2',state.shortcutPath2);
+  localStorage.setItem('rental_shortcut_name2',state.shortcutName2);
+  localStorage.setItem('rental_active',JSON.stringify(state.rentals));
+  localStorage.setItem('rental_history',JSON.stringify(state.rentalHistory));
+  localStorage.setItem('rental_tx_master',JSON.stringify(state.rentalTransmitters));
+  localStorage.setItem('ward_tx_master',JSON.stringify(state.wardTransmitters));
+}
+
+function checkWeeklyReview(){
+  return new Date().getDay()===6&&localStorage.getItem('rental_last_weekly_check')!==new Date().toISOString().split('T')[0];
+}
+function markWeeklyCheckDone(){localStorage.setItem('rental_last_weekly_check',new Date().toISOString().split('T')[0]);}
+
+function getEmergencyLog(){return JSON.parse(localStorage.getItem('emergency_log')||'[]');}
+function recordEmergencyAccess(staff){
+  const log=getEmergencyLog();
+  log.unshift({ts:new Date().toISOString(),staff});
+  localStorage.setItem('emergency_log',JSON.stringify(log.slice(0,20)));
+}
+function openEmergencyModal(){
+  if(!state.shortcutPath&&!state.shortcutPath2){alert('チャンネル変更アプリが登録されていません\n設定タブから登録してください');return;}
+  state.modalType='emergency';state.showModal=true;render();
+}
+function confirmEmergencyLaunch(n){
+  const sel=document.getElementById('emergency-staff-select');
+  if(!sel||!sel.value){alert('対応者を選択してください');return;}
+  recordEmergencyAccess(sel.value);
+  state.emergencyPopupDismissed=false;
+  state.showModal=false;
+  const name=n===2?state.shortcutName2:state.shortcutName1;
+  alert(name+'を起動します\n\n⚠️ 作業後に必ず貸出記録を入力してください！');
+  // const path=n===2?state.shortcutPath2:state.shortcutPath; window.open(path);
+  render();renderEmergencyPopup();
+}
+function dismissEmergencyPopup(){state.emergencyPopupDismissed=true;renderEmergencyPopup();}
+function clearEmergencyLog(){localStorage.removeItem('emergency_log');state.emergencyPopupDismissed=false;renderEmergencyPopup();}
+function renderEmergencyPopup(){
+  const log=getEmergencyLog();
+  if(!log.length||state.emergencyPopupDismissed){document.getElementById('emergency-popup-container').innerHTML='';return;}
+  const l=log[0];
+  const dtStr=new Date(l.ts).toLocaleString('ja-JP');
+  const staffStr=l.staff?' / 対応者：'+l.staff:'';
+  document.getElementById('emergency-popup-container').innerHTML=`
+    <div class="emergency-popup"><div class="emergency-popup-inner">
+      <div style="font-size:22px;">🚨</div>
+      <div class="emergency-popup-text">
+        <div class="emergency-popup-title">緊急アクセスの記録があります</div>
+        <div class="emergency-popup-sub">最終緊急処理：${dtStr}${staffStr}<br>貸出記録が未入力の可能性があります</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button class="btn btn-gray" style="font-size:12px;padding:7px 12px;" onclick="dismissEmergencyPopup()">一時非表示</button>
+        <button class="btn btn-success" style="font-size:12px;padding:7px 12px;" onclick="clearEmergencyLog()">解除（記録済）</button>
+      </div>
+    </div></div>`;}
+
+function getAvailableChannels(wardKey){
+  if(!wardKey)return[];
+  const ward=wardsConfig[wardKey];const available=[];
+  ward.monitors.forEach(monitor=>{monitor.channels.forEach(channel=>{
+    const isRented=Object.values(state.rentals).some(r=>r.wardKey===wardKey&&r.monitorId===monitor.id&&r.channel===channel);
+    if(!isRented)available.push({monitorName:monitor.name,monitorId:monitor.id,channel});
+  });});
+  return available;
+}
+function getWardTxId(wardKey,monitorId,channel){
+  const key=`${wardKey}-${monitorId}-${channel}`;
+  return state.wardTransmitters[key]||`TX-${wardKey}-${monitorId}-${channel}(未登録)`;
+}
+function isOverdue(d){return(Date.now()-new Date(d).getTime())>OVERDUE_DAYS*86400000;}
+function getDaysRented(d){return Math.floor((Date.now()-new Date(d).getTime())/86400000);}
+
+function startRental(){
+  state.currentRental={wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',status:'pending'};
+  state.rentalStep=1;state.modalType='rental';state.showModal=true;render();
+}
+function nextRentalStep(){
+  if(state.rentalStep===1){
+    if(!state.currentRental.wardKey||!state.currentRental.channel){alert('病棟とチャンネルを選択してください');return;}
+    state.rentalStep=2;
+  }else if(state.rentalStep===2){
+    if(!state.currentRental.deviceId||!state.currentRental.staffName){alert('機器IDと対応者を選択してください');return;}
+    state.currentRental.transmitterId=getWardTxId(state.currentRental.wardKey,state.currentRental.monitorId,state.currentRental.channel);
+    state.rentalStep=3;
+  }else if(state.rentalStep===3){state.rentalStep=4;}
+  render();
+}
+function confirmRental(){
+  const id='R'+Date.now();
+  state.rentals[id]={...state.currentRental,rentalId:id,rentalDate:new Date().toISOString(),status:'confirmed'};
+  saveData();state.showModal=false;render();
+}
+function launchChannelApp(n){
+  const path=n===2?state.shortcutPath2:state.shortcutPath;
+  const name=n===2?state.shortcutName2:state.shortcutName1;
+  if(!path){alert(name+'が登録されていません\n設定タブから登録してください');return;}
+  alert(name+'を起動します\n\n設定チャンネル：'+state.currentRental.channel);
+  // window.open(path);
+}
+function startReturn(rentalId){state.currentRental={...state.rentals[rentalId]};state.modalType='return';state.showModal=true;render();}
+function confirmReturn(){
+  const sel=document.getElementById('return-staff');
+  if(!sel||!sel.value){alert('返却者を選択してください');return;}
+  const id=state.currentRental.rentalId;
+  state.rentalHistory.unshift({...state.rentals[id],returnDate:new Date().toISOString(),returnStaff:sel.value});
+  delete state.rentals[id];saveData();state.showModal=false;render();
+}
+
+function exportHistoryCSV(){
+  if(!state.rentalHistory.length){alert('エクスポートする履歴がありません');return;}
+  const headers=['機器ID','病棟','チャンネル','預かり送信機','貸出用送信機','対応者','貸出日時','返却日時','返却者'];
+  const rows=state.rentalHistory.map(h=>[
+    h.deviceId,wardsConfig[h.wardKey].name,h.channel,
+    h.transmitterId||'',h.rentalTxId||'',h.staffName||'',
+    new Date(h.rentalDate).toLocaleString('ja-JP'),
+    new Date(h.returnDate).toLocaleString('ja-JP'),
+    h.returnStaff||''
+  ]);
+  const csv='\uFEFF'+[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:`貸出履歴_${new Date().toISOString().split('T')[0]}.csv`});
+  a.click();
+}
+
+function addDevice(){const v=document.getElementById('device-id').value.trim();if(!v||state.deviceList.some(d=>d.id===v)){alert(v?'既に登録済み':'機器IDを入力');return;}state.deviceList.push({id:v,type:'ベッドサイドモニタ'});saveData();document.getElementById('device-id').value='';render();}
+function removeDevice(id){if(confirm('削除しますか？')){state.deviceList=state.deviceList.filter(d=>d.id!==id);saveData();render();}}
+function addStaff(){const v=document.getElementById('staff-name').value.trim();if(!v||state.staffList.includes(v)){alert(v?'既に登録済み':'名前を入力');return;}state.staffList.push(v);saveData();document.getElementById('staff-name').value='';render();}
+function removeStaff(name){if(confirm('削除しますか？')){state.staffList=state.staffList.filter(s=>s!==name);saveData();render();}}
+function addRentalTx(){const id=document.getElementById('rtx-id').value.trim(),note=document.getElementById('rtx-note').value.trim();if(!id||state.rentalTransmitters.some(t=>t.id===id)){alert(id?'既に登録済み':'送信機IDを入力');return;}state.rentalTransmitters.push({id,note});saveData();document.getElementById('rtx-id').value='';document.getElementById('rtx-note').value='';render();}
+function removeRentalTx(id){if(confirm('削除しますか？')){state.rentalTransmitters=state.rentalTransmitters.filter(t=>t.id!==id);saveData();render();}}
+function saveWardTx(){const ward=wardsConfig[state.wardTxFilter];ward.monitors.forEach(m=>{m.channels.forEach(ch=>{const key=`${state.wardTxFilter}-${m.id}-${ch}`,el=document.getElementById(`wtx-${key}`);if(el&&el.value.trim())state.wardTransmitters[key]=el.value.trim();});});saveData();alert('保存しました');render();}
+function handleShortcutDrop(e,n){e.preventDefault();const f=e.dataTransfer.files;if(f.length){if(n===2)state.shortcutPath2=f[0].path||f[0].name;else state.shortcutPath=f[0].path||f[0].name;saveData();render();}}
+
+function render(){
+  const active=Object.values(state.rentals);
+  const overdueCount=active.filter(r=>isOverdue(r.rentalDate)).length;
+  const canRental=state.deviceList.length>0&&state.staffList.length>0;
+  document.getElementById('app').innerHTML=`
+    ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
+      <div class="title">📱 モニタ貸出管理</div>
+      <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
+    </div>
+    <div class="inline-form-card">
+      <div class="inline-form-title">➕ 新規貸出受付</div>
+      ${canRental
+        ?`<button class="btn btn-primary" style="width:100%;font-size:15px;padding:13px;" onclick="startRental()">新規貸出を開始する</button>`
+        :`<div style="color:#9ca3af;text-align:center;padding:10px 0;">設定タブで機器・対応者を登録してください</div>`}
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab ${state.currentTab==='rental'?'tab-active':''}" onclick="state.currentTab='rental';render()">貸出中 (${active.length})${overdueCount?` <span style="color:#f97316;font-size:12px;">⚠️${overdueCount}件</span>`:''}</button>
+        <button class="tab ${state.currentTab==='history'?'tab-active':''}" onclick="state.currentTab='history';render()">履歴</button>
+        <button class="tab ${state.currentTab==='list'?'tab-active':''}" onclick="state.currentTab='list';render()">📋 一覧</button>
+        <button class="tab ${state.currentTab==='settings'?'tab-active':''}" onclick="state.currentTab='settings';render()">設定</button>
+      </div>
+      ${state.currentTab==='rental'?renderRentalTab():''}
+      ${state.currentTab==='history'?renderHistoryTab():''}
+      ${state.currentTab==='list'?renderListTab():''}
+      ${state.currentTab==='settings'?renderSettingsTab():''}
+    </div>
+    ${state.showModal?renderModal():''}`;
+}
+
+function renderRentalTab(){
+  const active=Object.values(state.rentals).sort((a,b)=>new Date(a.rentalDate)-new Date(b.rentalDate));
+  if(!active.length)return`<div style="text-align:center;padding:32px;color:#9ca3af;">現在貸出中の機器はありません</div>`;
+  return active.map(r=>{
+    const ward=wardsConfig[r.wardKey],ov=isOverdue(r.rentalDate),days=getDaysRented(r.rentalDate);
+    return`<div class="rental-card ${ov?'rental-card-overdue':''}" onclick="startReturn('${r.rentalId}')">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
+        <div>
+          <span style="font-size:17px;font-weight:700;color:#111827;">${r.deviceId}</span>
+          ${ov?`<span class="overdue-badge">⚠️ ${days}日経過</span>`:''}
+          <div style="font-size:12px;color:#6b7280;margin-top:2px;">${ward.name} — ch ${r.channel}</div>
+        </div>
+        <span class="rental-status status-${r.status}">${r.status==='confirmed'?'貸出中':'準備中'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:#374151;">
+        <div><strong>対応者:</strong> ${r.staffName}</div>
+        <div><strong>預かり送信機:</strong> <span class="tx-badge">${r.transmitterId}</span></div>
+        ${r.rentalTxId?`<div><strong>貸出用送信機:</strong> <span class="tx-badge">${r.rentalTxId}</span></div>`:''}
+        <div><strong>貸出日時:</strong> ${new Date(r.rentalDate).toLocaleString('ja-JP')}</div>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:8px;text-align:right;">タップして返却処理</div>
+    </div>`;
+  }).join('');
+}
+
+
+function renderListTab(){
+  const wk=state.listWardFilter;
+  const ward=wardsConfig[wk];
+  const allRentals=Object.values(state.rentals);
+  return`<div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="font-weight:700;font-size:13px;color:#374151;">病棟：</div>
+      ${wardKeys.map(k=>`<button class="tab ${wk===k?'tab-active':''}" style="font-size:12px;padding:6px 12px;" onclick="state.listWardFilter='${k}';render()">${wardsConfig[k].name.replace('病棟','')}</button>`).join('')}
+    </div>
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">${ward.name}</div>
+    ${ward.monitors.map(m=>{
+      const rental=allRentals.filter(r=>r.wardKey===wk&&r.monitorId===m.id);
+      const rentedChs=new Set(rental.map(r=>r.channel));
+      return`<div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#92400e;background:#fef3c7;padding:6px 12px;border-radius:8px;margin-bottom:6px;font-size:13px;">
+          モニタ ${m.name}
+          <span style="font-size:11px;font-weight:400;color:#92400e;margin-left:8px;">${rentedChs.size?'貸出中 '+rentedChs.size+'ch':''}</span>
+        </div>
+        <div style="overflow-x:auto;">
+        <table class="history-table" style="min-width:420px;">
+          <thead><tr>
+            <th>ch</th><th>送信機ID</th><th>機種</th><th>シリアル</th><th>状態</th>
+          </tr></thead>
+          <tbody>
+          ${m.channels.map(ch=>{
+            if(ch==='フリー')return`<tr><td colspan="5" style="color:#9ca3af;font-style:italic;">フリー枠</td></tr>`;
+            const key=`${wk}-${m.id}-${ch}`;
+            const txId=state.wardTransmitters[key]||'—';
+            const det=WARD_TX_DETAIL[key]||{};
+            const ren=rental.find(r=>r.channel===ch);
+            return`<tr style="${ren?'background:#fef9c3;':''}" >
+              <td style="font-weight:700;">ch ${ch}</td>
+              <td><span class="tx-badge">${txId}</span></td>
+              <td style="font-size:12px;color:#6b7280;">${det.model||'—'}</td>
+              <td style="font-size:12px;color:#6b7280;">${det.serial||'—'}</td>
+              <td>${ren
+                ? `<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">貸出中</span>`
+                : `<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">空き</span>`
+              }</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderHistoryTab(){
+  return`<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="btn btn-gray" style="font-size:12px;padding:7px 14px;" onclick="exportHistoryCSV()">📥 CSVエクスポート</button>
+  </div>
+  ${!state.rentalHistory.length?`<div style="text-align:center;padding:32px;color:#9ca3af;">履歴はありません</div>`
+  :`<table class="history-table"><thead><tr><th>機器ID</th><th>病棟</th><th>ch</th><th>預かり送信機</th><th>貸出日</th><th>返却日</th><th>対応者</th><th>返却者</th></tr></thead><tbody>
+  ${state.rentalHistory.map(h=>`<tr>
+    <td>${h.deviceId}</td><td>${wardsConfig[h.wardKey].name}</td><td>${h.channel}</td>
+    <td><span class="tx-badge">${h.transmitterId}</span></td>
+    <td>${new Date(h.rentalDate).toLocaleDateString('ja-JP')}</td>
+    <td>${new Date(h.returnDate).toLocaleDateString('ja-JP')}</td>
+    <td>${h.staffName||'—'}</td><td>${h.returnStaff||'—'}</td>
+  </tr>`).join('')}
+  </tbody></table>`}`;}
+
+function renderListTab(){
+  const wk=state.listWardFilter;
+  const ward=wardsConfig[wk];
+  const activeRentals=Object.values(state.rentals);
+  return`<div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      ${wardKeys.map(k=>`<button class="tab ${wk===k?'tab-active':''}" onclick="state.listWardFilter='${k}';render()">${wardsConfig[k].name}</button>`).join('')}
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">
+      ● 貸出中チャンネルはオレンジ表示　● 送信機IDは編集可（設定→病棟送信機）
+    </div>
+    ${ward.monitors.map(m=>{
+      return`<div style="margin-bottom:18px;">
+        <div style="font-weight:700;color:#374151;font-size:14px;margin-bottom:8px;padding:6px 10px;background:#f3f4f6;border-radius:8px;">
+          モニタ ${m.name}（${m.channels.length}ch）
+        </div>
+        <table class="history-table" style="font-size:13px;">
+          <thead><tr>
+            <th style="width:80px;">チャンネル</th>
+            <th style="width:100px;">送信機ID</th>
+            <th>貸出状況</th>
+          </tr></thead>
+          <tbody>
+            ${m.channels.map(ch=>{
+              const key=`${wk}-${m.id}-${ch}`;
+              const txId=state.wardTransmitters[key]||'—';
+              const rental=activeRentals.find(r=>r.wardKey===wk&&r.monitorId===m.id&&r.channel===ch);
+              const isFree=ch==='フリー';
+              return`<tr style="${rental?'background:#fff7ed;':''}">
+                <td style="font-weight:700;${rental?'color:#ea580c;':''}">
+                  ${isFree?`<span style="color:#9ca3af;">フリー枠</span>`:ch}
+                  ${rental?'<span style="font-size:10px;background:#fed7aa;color:#9a3412;padding:1px 6px;border-radius:10px;margin-left:4px;">貸出中</span>':''}
+                </td>
+                <td><span class="tx-badge" style="${isFree?'background:#f3f4f6;color:#9ca3af;':''}">${txId}</span></td>
+                <td style="font-size:12px;color:#6b7280;">
+                  ${rental?`<span style="color:#ea580c;font-weight:600;">${rental.deviceId} 貸出中（${rental.staffName}）</span>`:'空き'}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderSettingsTab(){
+  const tabs=[['device','機器'],['staff','対応者'],['rentalTx','貸出用送信機'],['wardTx','病棟送信機'],['app','アプリ']];
+  const t=state.settingsMasterTab;
+  return`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    ${tabs.map(([k,l])=>`<button class="tab ${t===k?'tab-active':''}" onclick="state.settingsMasterTab='${k}';render()">${l}</button>`).join('')}
+  </div>
+  ${t==='device'?`<div><div class="section-label">機器リスト</div><div style="display:flex;gap:8px;margin-bottom:12px;"><input type="text" id="device-id" class="form-input" placeholder="機器ID (例: BSM-001)"><button class="btn btn-primary" onclick="addDevice()">追加</button></div>${state.deviceList.map(d=>`<div class="list-item"><span class="list-item-name">${d.id}</span><button class="btn btn-danger" style="padding:5px 11px;font-size:12px;" onclick="removeDevice('${d.id}')">削除</button></div>`).join('')||'<div style="color:#9ca3af;text-align:center;padding:16px;">未登録</div>'}</div>`:''}
+  ${t==='staff'?`<div><div class="section-label">対応者リスト</div><div style="display:flex;gap:8px;margin-bottom:12px;"><input type="text" id="staff-name" class="form-input" placeholder="対応者名"><button class="btn btn-primary" onclick="addStaff()">追加</button></div>${state.staffList.map(s=>`<div class="list-item"><span class="list-item-name">${s}</span><button class="btn btn-danger" style="padding:5px 11px;font-size:12px;" onclick="removeStaff('${s}')">削除</button></div>`).join('')||'<div style="color:#9ca3af;text-align:center;padding:16px;">未登録</div>'}</div>`:''}
+  ${t==='rentalTx'?`<div><div class="section-label">ME室所有 — 貸出用送信機マスター</div><div class="grid-2" style="margin-bottom:8px;"><input type="text" id="rtx-id" class="form-input" placeholder="送信機ID (例: TX-001)"><input type="text" id="rtx-note" class="form-input" placeholder="備考 (任意)"></div><button class="btn btn-primary" style="width:100%;margin-bottom:14px;" onclick="addRentalTx()">追加</button>${state.rentalTransmitters.map(t=>`<div class="list-item"><div><span class="tx-badge">${t.id}</span>${t.note?`<span style="font-size:12px;color:#6b7280;margin-left:8px;">${t.note}</span>`:''}</div><button class="btn btn-danger" style="padding:5px 11px;font-size:12px;" onclick="removeRentalTx('${t.id}')">削除</button></div>`).join('')||'<div style="color:#9ca3af;text-align:center;padding:16px;">未登録</div>'}</div>`:''}
+  ${t==='wardTx'?renderSettingsWardTx():''}
+  ${t==='app'?renderSettingsApp():''}`;
+}
+
+function renderSettingsWardTx(){
+  const ward=wardsConfig[state.wardTxFilter];
+  return`<div><div class="section-label">病棟固定送信機マスター</div>
+  <select class="form-select" style="margin-bottom:14px;" onchange="state.wardTxFilter=this.value;render()">
+    ${wardKeys.map(wk=>`<option value="${wk}" ${state.wardTxFilter===wk?'selected':''}>${wardsConfig[wk].name}</option>`).join('')}
+  </select>
+  <div style="max-height:380px;overflow-y:auto;">
+  ${ward.monitors.map(m=>`<div style="margin-bottom:16px;"><div style="font-weight:700;color:#374151;margin-bottom:8px;">モニタ ${m.name}</div>
+    ${m.channels.map(ch=>{const key=`${state.wardTxFilter}-${m.id}-${ch}`,cur=state.wardTransmitters[key]||'';
+      return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="min-width:70px;font-size:13px;font-weight:600;">ch ${ch}</div>
+        <input type="text" id="wtx-${key}" class="form-input" style="font-size:14px;" value="${cur}" placeholder="送信機ID">
+      </div>`;}).join('')}
+  </div>`).join('')}
+  </div>
+  <button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="saveWardTx()">💾 保存</button></div>`;}
+
+function renderSettingsApp(){
+  const log=getEmergencyLog();
+  const slot=(n)=>{
+    const path=n===2?state.shortcutPath2:state.shortcutPath;
+    const nameKey=n===2?'shortcutName2':'shortcutName1';
+    const nameVal=n===2?state.shortcutName2:state.shortcutName1;
+    return`<div style="margin-bottom:16px;">
+      <div style="font-weight:700;font-size:13px;color:#374151;margin-bottom:6px;">アプリ${n}</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <input type="text" class="form-input" style="font-size:13px;" value="${nameVal}"
+          placeholder="アプリ名 (例: WEP用)" oninput="state.${nameKey}=this.value;saveData()">
+      </div>
+      <div class="drop-zone" style="padding:18px;" ondrop="handleShortcutDrop(event,${n})" ondragover="event.preventDefault();event.currentTarget.classList.add('dragover')" ondragleave="event.currentTarget.classList.remove('dragover')">
+        ${path?'✓ 登録済み':'📎 ショートカットをドラッグ&ドロップ'}
+      </div>
+      ${path?`<div style="background:#f3f4f6;padding:10px 14px;border-radius:8px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:#6b7280;word-break:break-all;">${path}</span>
+        <button class="btn btn-danger" style="padding:5px 11px;font-size:12px;margin-left:10px;flex-shrink:0;" onclick="${n===2?"state.shortcutPath2='';":"state.shortcutPath='';"}saveData();render()">削除</button>
+      </div>`:''}
+    </div>`;
+  };
+  return`<div>
+  <div class="section-label">チャンネル変更アプリ</div>
+  ${slot(1)}${slot(2)}
+  <div style="margin-top:20px;"><div class="section-label">緊急アクセス履歴</div>
+  ${log.length?log.slice(0,10).map((l,i)=>`<div class="list-item" style="font-size:12px;"><span>${new Date(l.ts).toLocaleString('ja-JP')}${l.staff?' / '+l.staff:''}</span>${i===0?'<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">最新</span>':''}</div>`).join(''):`<div style="color:#9ca3af;text-align:center;padding:16px;">履歴はありません</div>`}
+  ${log.length?`<button class="btn btn-danger" style="width:100%;margin-top:8px;font-size:12px;" onclick="clearEmergencyLog();render()">履歴をクリア</button>`:''}
+  </div></div>`;}
+
+function renderModal(){
+  if(state.modalType==='rental')return renderRentalModal();
+  if(state.modalType==='return')return renderReturnModal();
+  if(state.modalType==='emergency')return renderEmergencyModal();
+  return'';
+}
+
+function renderEmergencyModal(){
+  return`<div class="modal"><div class="modal-content" style="max-width:400px;">
+    <div class="modal-header"><h3 class="modal-title">🚨 緊急アクセス</h3><button class="btn btn-gray" onclick="state.showModal=false;render()">✕</button></div>
+    <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:14px;margin-bottom:18px;font-size:13px;line-height:1.7;">
+      <strong>⚠️ 注意</strong><br>チャンネル変更アプリへの緊急アクセスです。<br>使用後は<strong>必ず貸出記録を入力</strong>してください。
+    </div>
+    <div class="form-group">
+      <label class="form-label">対応者</label>
+      <select class="form-select" id="emergency-staff-select">
+        <option value="">選択してください</option>
+        ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-gray" style="flex:1;" onclick="state.showModal=false;render()">キャンセル</button>
+      <button class="btn btn-emergency" style="flex:1;animation:none;" onclick="confirmEmergencyLaunch(1)">🔧 ${state.shortcutName1||'アプリA'}</button>
+      ${state.shortcutPath2?`<button class="btn btn-emergency" style="flex:1;animation:none;background:linear-gradient(135deg,#0e7490,#0891b2);" onclick="confirmEmergencyLaunch(2)">🔧 ${state.shortcutName2||'アプリB'}</button>`:``}
+    </div>
+  </div></div>`;}
+
+function renderRentalModal(){
+  const available=getAvailableChannels(state.currentRental.wardKey);
+  return`<div class="modal"><div class="modal-content">
+    <div class="modal-header"><h3 class="modal-title">新規貸出</h3><button class="btn btn-gray" onclick="state.showModal=false;render()">✕</button></div>
+    <div class="step-indicator">
+      <div class="step ${state.rentalStep>=1?'step-complete':''}">1.依頼受付</div>
+      <div class="step ${state.rentalStep>=2?'step-active':''}">2.機器準備</div>
+      <div class="step ${state.rentalStep>=3?'step-active':''}">3.送信機預かり</div>
+      <div class="step ${state.rentalStep===4?'step-active':''}">4.確定</div>
+    </div>
+    ${state.rentalStep===1?`
+      <div class="form-group"><label class="form-label">貸出病棟</label>
+        <select class="form-select" onchange="state.currentRental.wardKey=this.value;state.currentRental.channel='';state.currentRental.monitorId='';render()">
+          <option value="">選択してください</option>
+          ${wardKeys.map(wk=>`<option value="${wk}" ${state.currentRental.wardKey===wk?'selected':''}>${wardsConfig[wk].name}</option>`).join('')}
+        </select>
+      </div>
+      ${state.currentRental.wardKey?`<div class="form-group"><label class="form-label">空きチャンネル (${available.length}件)</label>
+        <select class="form-select" onchange="const v=this.value.split('-');state.currentRental.monitorId=parseInt(v[0]);state.currentRental.channel=v[1];">
+          <option value="">選択してください</option>
+          ${available.map(ch=>`<option value="${ch.monitorId}-${ch.channel}">${ch.monitorName} - ch${ch.channel}</option>`).join('')}
+        </select></div>`:''}
+      <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="nextRentalStep()">次へ</button>`:''}
+    ${state.rentalStep===2?`
+      <div class="info-box">📍 ${wardsConfig[state.currentRental.wardKey].name} — ch ${state.currentRental.channel}</div>
+      <div class="form-group"><label class="form-label">貸出機器ID</label>
+        <select class="form-select" onchange="state.currentRental.deviceId=this.value">
+          <option value="">選択してください</option>
+          ${state.deviceList.map(d=>`<option value="${d.id}">${d.id}</option>`).join('')}
+        </select>
+      </div>
+      ${state.rentalTransmitters.length?`<div class="form-group"><label class="form-label">使用する貸出用送信機</label>
+        <select class="form-select" onchange="state.currentRental.rentalTxId=this.value">
+          <option value="">選択してください</option>
+          ${state.rentalTransmitters.map(t=>`<option value="${t.id}">${t.id}${t.note?' ('+t.note+')':''}</option>`).join('')}
+        </select></div>`:''}
+      <div class="form-group"><label class="form-label">対応者</label>
+        <select class="form-select" onchange="state.currentRental.staffName=this.value">
+          <option value="">選択してください</option>
+          ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-gray" style="flex:1;" onclick="state.rentalStep=1;render()">戻る</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="nextRentalStep()">次へ</button>
+      </div>`:''}
+    ${state.rentalStep===3?`
+      <div class="info-box">
+        <div style="margin-bottom:6px;"><strong>機器:</strong> ${state.currentRental.deviceId}</div>
+        <div style="margin-bottom:6px;"><strong>設定チャンネル:</strong> ${state.currentRental.channel}</div>
+        <div style="margin-bottom:6px;"><strong>貸出用送信機:</strong> <span class="tx-badge">${state.currentRental.rentalTxId||'未選択'}</span></div>
+        <div><strong>預かり病棟送信機:</strong> <span class="tx-badge">${getWardTxId(state.currentRental.wardKey,state.currentRental.monitorId,state.currentRental.channel)}</span></div>
+      </div>
+      <div style="background:#fef3c7;padding:14px;border-radius:8px;margin-bottom:14px;">
+        <p style="font-weight:700;margin-bottom:10px;">⚠️ 必ず以下の手順で作業してください</p>
+        <ol style="margin-left:20px;line-height:1.9;font-size:13px;">
+          <li>下のボタンでチャンネル変更アプリを起動</li>
+          <li>貸出用送信機 (${state.currentRental.rentalTxId||'—'}) をチャンネル ${state.currentRental.channel} に設定</li>
+          <li>病棟の送信機を預かる</li>
+        </ol>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        ${state.shortcutPath?`<button class="btn btn-success" style="flex:1;" onclick="launchChannelApp(1)">🔧 ${state.shortcutName1}</button>`:''}
+        ${state.shortcutPath2?`<button class="btn btn-success" style="flex:1;background:#0891b2;" onclick="launchChannelApp(2)">🔧 ${state.shortcutName2}</button>`:''}
+        ${!state.shortcutPath&&!state.shortcutPath2?`<div style="color:#9ca3af;font-size:13px;padding:10px 0;">設定タブでアプリを登録してください</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gray" style="flex:1;" onclick="state.rentalStep=2;render()">戻る</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="nextRentalStep()">作業完了</button>
+      </div>`:''}
+    ${state.rentalStep===4?`
+      <div class="info-box"><h4 style="font-weight:700;margin-bottom:10px;">貸出内容確認</h4>
+        <div style="line-height:2;font-size:13px;">
+          <div><strong>病棟:</strong> ${wardsConfig[state.currentRental.wardKey].name}</div>
+          <div><strong>チャンネル:</strong> ${state.currentRental.channel}</div>
+          <div><strong>貸出機器:</strong> ${state.currentRental.deviceId}</div>
+          <div><strong>貸出用送信機:</strong> <span class="tx-badge">${state.currentRental.rentalTxId||'—'}</span></div>
+          <div><strong>対応者:</strong> ${state.currentRental.staffName}</div>
+          <div><strong>預かり送信機:</strong> <span class="tx-badge">${state.currentRental.transmitterId}</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gray" style="flex:1;" onclick="state.rentalStep=3;render()">戻る</button>
+        <button class="btn btn-success" style="flex:1;" onclick="confirmRental()">✓ 貸出確定</button>
+      </div>`:''}
+  </div></div>`;}
+
+function renderReturnModal(){
+  const ward=wardsConfig[state.currentRental.wardKey];
+  return`<div class="modal"><div class="modal-content">
+    <div class="modal-header"><h3 class="modal-title">返却処理</h3><button class="btn btn-gray" onclick="state.showModal=false;render()">✕</button></div>
+    <div class="info-box">
+      <div style="margin-bottom:6px;"><strong>機器:</strong> ${state.currentRental.deviceId}</div>
+      <div style="margin-bottom:6px;"><strong>病棟:</strong> ${ward.name}</div>
+      <div style="margin-bottom:6px;"><strong>チャンネル:</strong> ${state.currentRental.channel}</div>
+      ${state.currentRental.rentalTxId?`<div style="margin-bottom:6px;"><strong>貸出用送信機:</strong> <span class="tx-badge">${state.currentRental.rentalTxId}</span></div>`:''}
+      <div><strong>預かり送信機:</strong> <span class="tx-badge">${state.currentRental.transmitterId}</span></div>
+    </div>
+    <div style="background:#fef3c7;padding:14px;border-radius:8px;margin-bottom:14px;">
+      <p style="font-weight:700;margin-bottom:8px;">⚠️ 返却時の確認事項</p>
+      <ul style="margin-left:20px;line-height:1.9;font-size:13px;">
+        <li>貸出機器 (${state.currentRental.deviceId}) を回収</li>
+        <li>預かっていた送信機 (${state.currentRental.transmitterId}) を病棟に返却</li>
+        ${state.currentRental.rentalTxId?`<li>貸出用送信機 (${state.currentRental.rentalTxId}) を回収</li>`:''}
+      </ul>
+    </div>
+    <div class="form-group"><label class="form-label">返却者</label>
+      <select class="form-select" id="return-staff">
+        <option value="">選択してください</option>
+        ${state.staffList.map(s=>`<option value="${s}">${s}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-gray" style="flex:1;" onclick="state.showModal=false;render()">キャンセル</button>
+      <button class="btn btn-success" style="flex:1;" onclick="confirmReturn()">✓ 返却完了</button>
+    </div>
+  </div></div>`;}
+
+window.addEventListener('load',()=>{loadData();render();renderEmergencyPopup();});
+</script>
+</body>
+</html>
