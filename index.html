@@ -368,7 +368,7 @@ function confirmEmergencyLaunch(n){
   state.showModal=false;
   const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
-  if(path)window.open(path); else alert(name+'が登録されていません');
+  if(path)location.href=path; else alert(name+'が登録されていません');
   render();renderEmergencyPopup();
 }
 function dismissEmergencyPopup(){state.emergencyPopupDismissed=true;renderEmergencyPopup();}
@@ -462,7 +462,7 @@ function launchChannelApp(n){
   const path=n===2?state.shortcutPath2:state.shortcutPath;
   const name=n===2?state.shortcutName2:state.shortcutName1;
   if(!path){alert(name+'が登録されていません\n設定タブから登録してください');return;}
-  window.open(path);
+  location.href=path;
 }
 function startReturn(rentalId){state.currentRental={...state.rentals[rentalId]};state.modalType='return';state.showModal=true;render();}
 function confirmReturn(){
