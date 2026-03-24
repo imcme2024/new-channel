@@ -32,11 +32,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:linear-gradient(135deg,#fe
 .form-input,.form-select{width:100%;padding:10px 13px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;font-family:'Noto Sans JP',sans-serif;transition:border-color 0.15s;}
 .form-input:focus,.form-select:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,0.12);}
 .list-item{background:#f9fafb;padding:10px 14px;border-radius:8px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
-.list-item-name{font-weight:600;color:#111827;}
-.rental-card{background:#fff;border:2px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all 0.18s;}
-.rental-card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.1);transform:translateY(-2px);border-color:#f59e0b;}
+.rental-card{background:#fff;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all 0.18s;}
+.rental-card:hover{box-shadow:0 4px 14px rgba(0,0,0,0.1);border-color:#f59e0b;}
 .rental-card-overdue{border-color:#f97316 !important;background:#fff7ed;}
-.rental-card-overdue:hover{border-color:#ea580c !important;}
 .rental-status{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700;}
 .status-pending{background:#fef3c7;color:#92400e;}
 .status-confirmed{background:#d1fae5;color:#065f46;}
@@ -67,8 +65,79 @@ body{font-family:'Noto Sans JP',sans-serif;background:linear-gradient(135deg,#fe
 .section-label{font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
 .tx-badge{display:inline-block;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;}
 ::placeholder{color:#d1d5db !important;opacity:1;}
-.drop-zone{border:3px dashed #d1d5db;border-radius:12px;padding:30px;text-align:center;color:#6b7280;cursor:pointer;transition:all 0.18s;}
-.drop-zone:hover,.drop-zone.dragover{border-color:#f59e0b;background:#fffbeb;color:#f59e0b;}
+
+/* ===== 選択カード（固定サイズ・チェック右上絶対配置） ===== */
+.sel-card{
+  border-radius:10px;cursor:pointer;transition:border-color 0.15s,background 0.15s;
+  height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  border:2px solid #e5e7eb;background:#f9fafb;position:relative;overflow:hidden;
+}
+.sel-card:hover:not(.sel-disabled){border-color:#f59e0b;}
+.sel-card.sel-selected{border-color:#f59e0b;background:#fffbeb;}
+.sel-card.sel-disabled{opacity:0.45;cursor:not-allowed;}
+.sel-card .sc-label{font-weight:700;font-size:13px;color:#374151;line-height:1.2;text-align:center;padding:0 4px;}
+.sel-card.sel-selected .sc-label{color:#92400e;}
+.sel-card .sc-sub{font-size:10px;color:#9ca3af;line-height:1.1;text-align:center;padding:0 4px;}
+.sel-card .sc-check{position:absolute;top:3px;right:5px;font-size:10px;color:#f59e0b;font-weight:900;display:none;}
+.sel-card.sel-selected .sc-check{display:block;}
+
+/* 病棟カード: 未選択は薄色、選択は濃い背景＋白文字 */
+.wc-W7{background:#f5f3ff;border-color:#c4b5fd;}
+.wc-W7.sel-selected{background:#7c3aed;border-color:#5b21b6;}
+.wc-W7.sel-selected .sc-label{color:#fff;}.wc-W7.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-W7.sel-selected .sc-check{color:#fff;}
+.wc-E7{background:#eff6ff;border-color:#93c5fd;}
+.wc-E7.sel-selected{background:#2563eb;border-color:#1d4ed8;}
+.wc-E7.sel-selected .sc-label{color:#fff;}.wc-E7.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-E7.sel-selected .sc-check{color:#fff;}
+.wc-W6{background:#f0fdf4;border-color:#86efac;}
+.wc-W6.sel-selected{background:#16a34a;border-color:#15803d;}
+.wc-W6.sel-selected .sc-label{color:#fff;}.wc-W6.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-W6.sel-selected .sc-check{color:#fff;}
+.wc-E6{background:#f0fdfa;border-color:#5eead4;}
+.wc-E6.sel-selected{background:#0d9488;border-color:#0f766e;}
+.wc-E6.sel-selected .sc-label{color:#fff;}.wc-E6.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-E6.sel-selected .sc-check{color:#fff;}
+.wc-W5{background:#fff7ed;border-color:#fdba74;}
+.wc-W5.sel-selected{background:#ea580c;border-color:#c2410c;}
+.wc-W5.sel-selected .sc-label{color:#fff;}.wc-W5.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-W5.sel-selected .sc-check{color:#fff;}
+.wc-E5{background:#fdf2f8;border-color:#f0abfc;}
+.wc-E5.sel-selected{background:#db2777;border-color:#be185d;}
+.wc-E5.sel-selected .sc-label{color:#fff;}.wc-E5.sel-selected .sc-sub{color:rgba(255,255,255,0.8);}.wc-E5.sel-selected .sc-check{color:#fff;}
+
+/* 送信機カード */
+.txc{background:#f9fafb;border:2px solid #e5e7eb;}
+.txc.sel-selected{background:#fffbeb;border-color:#f59e0b;}
+.txc.sel-selected .sc-label{color:#92400e;}
+.txc-temp{background:#fafafa;border:2px dashed #d1d5db;}
+.txc-temp.sel-selected{background:#f5f3ff;border-color:#8b5cf6;}
+.txc-temp.sel-selected .sc-label{color:#6d28d9;}
+.txc-temp.sel-selected .sc-check{color:#8b5cf6;}
+
+/* スタッフカード */
+.stfc{background:#f9fafb;border:2px solid #e5e7eb;height:52px;}
+.stfc.sel-selected{background:#ecfdf5;border-color:#10b981;}
+.stfc.sel-selected .sc-label{color:#065f46;}
+.stfc.sel-selected .sc-check{color:#10b981;}
+
+/* 一覧タブ */
+.list-row-rented{background:#fff3e0 !important;border-left:4px solid #f97316;}
+.list-tx-id{font-size:14px;font-weight:900;color:#1e40af;}
+.list-ch-rented{font-size:14px;font-weight:900;color:#ea580c;}
+.list-ch-free{font-size:13px;font-weight:700;color:#374151;}
+.list-model-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;}
+.m-zs91{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+.m-zs63{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+.m-zs62{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
+.m-zs61{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;}
+.m-lx{background:#fce7f3;color:#9d174d;border:1px solid #f9a8d4;}
+.m-other{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;}
+.list-rented-tx{display:inline-block;background:#ffedd5;color:#9a3412;border:1px solid #fed7aa;border-radius:5px;font-size:12px;font-weight:700;padding:2px 8px;}
+.list-free-dot{color:#10b981;font-size:11px;font-weight:600;}
+.list-ward-chip{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;}
+
+/* 貸出送信機マスター */
+.rtx-edit-row{background:#f9fafb;border-radius:8px;margin-bottom:7px;display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:wrap;}
+.rtx-edit-input{flex:1;min-width:80px;padding:7px 10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;transition:border-color 0.15s;}
+.rtx-edit-input:focus{outline:none;border-color:#f59e0b;}
+.rtx-note-input{flex:2;min-width:100px;padding:7px 10px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;color:#6b7280;}
+.rtx-note-input:focus{outline:none;border-color:#f59e0b;}
 </style>
 </head>
 <body>
@@ -795,7 +864,12 @@ function renderRentalModal(){
       <div class="form-group">
         <label class="form-label">🏥 貸出病棟</label>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          ${wardKeys.map(wk=>card(wk,wardsConfig[wk].name.replace('病棟',''),'病棟',`state.currentRental.wardKey='${wk}';state.currentRental.channel='';state.currentRental.monitorId='';state.chError='';render()`,state.currentRental.wardKey===wk,false)).join('')}
+          ${wardKeys.map(wk=>`<div class="sel-card wc-${wk} ${state.currentRental.wardKey===wk?'sel-selected':''}"
+            onclick="state.currentRental.wardKey='${wk}';state.currentRental.channel='';state.currentRental.monitorId='';state.chError='';state.showChList=false;render()">
+            <div class="sc-label">${wardsConfig[wk].name.replace('病棟','')}</div>
+            <div class="sc-sub">病棟</div>
+            <div class="sc-check">✓</div>
+          </div>`).join('')}
         </div>
       </div>
       <div class="form-group">
@@ -812,7 +886,7 @@ function renderRentalModal(){
           </div>
           ${state.currentRental.wardKey?`<button class="btn btn-gray" style="white-space:nowrap;font-size:13px;padding:10px 14px;" onclick="state.showChList=!state.showChList;render()">
             ${state.showChList?'▲ 閉じる':'📋 ch一覧'}
-          </button>`:''}
+          </button>`:`<button class="btn btn-gray" style="white-space:nowrap;font-size:13px;padding:10px 14px;opacity:0.4;cursor:not-allowed;">📋 ch一覧</button>`}
         </div>
         ${state.showChList&&state.currentRental.wardKey?`
         <div style="margin-top:10px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;">
@@ -846,7 +920,9 @@ function renderRentalModal(){
       <div class="form-group">
         <label class="form-label">👤 対応者</label>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
-          ${state.staffList.map(s=>card(s,s,'',`state.currentRental.staffName='${s}';render()`,state.currentRental.staffName===s,false)).join('')}
+          ${state.staffList.map(s=>`<div class="sel-card stfc ${state.currentRental.staffName===s?'sel-selected':''}" onclick="state.currentRental.staffName='${s}';render()">
+            <div class="sc-label">${s}</div><div class="sc-check">✓</div>
+          </div>`).join('')}
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px;">
