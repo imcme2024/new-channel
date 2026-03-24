@@ -588,7 +588,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v16</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v17</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
@@ -889,21 +889,24 @@ function renderRentalModal(){
           </button>`:`<button class="btn btn-gray" style="white-space:nowrap;font-size:13px;padding:10px 14px;opacity:0.4;cursor:not-allowed;">📋 ch一覧</button>`}
         </div>
         ${state.showChList&&state.currentRental.wardKey?`
-        <div style="margin-top:10px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;">
+        <div style="margin-top:10px;background:#fff;border:2px solid #e2e8f0;border-radius:12px;padding:12px;max-height:260px;overflow-y:auto;">
           ${wardsConfig[state.currentRental.wardKey].monitors.map(m=>{
-            return`<div style="margin-bottom:8px;">
-              <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px;">モニタ${m.name}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            return`<div style="margin-bottom:12px;">
+              <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;padding:3px 8px;background:#f3f4f6;border-radius:6px;display:inline-block;">モニタ ${m.name}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
                 ${m.channels.map(ch=>{
                   const rented=Object.values(state.rentals).some(r=>r.wardKey===state.currentRental.wardKey&&r.channel===ch);
                   const isFree=ch==='フリー';
+                  const isSelected=state.currentRental.channel===ch;
                   return`<span onclick="${rented||isFree?'':(`state.currentRental.channel='${ch}';state.currentRental.monitorId=${m.id};state.chError='';state.showChList=false;render()`)}"
-                    style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;
+                    style="display:inline-block;padding:6px 13px;border-radius:8px;font-size:15px;font-weight:900;letter-spacing:0.04em;
                     cursor:${rented||isFree?'default':'pointer'};
-                    background:${rented?'#fee2e2':isFree?'#f3f4f6':'#dbeafe'};
-                    color:${rented?'#991b1b':isFree?'#9ca3af':'#1e40af'};
-                    border:1.5px solid ${rented?'#fca5a5':isFree?'#e5e7eb':'#93c5fd'};">
-                    ${ch}${rented?' (貸出中)':''}
+                    background:${isSelected?'#f59e0b':rented?'#fecaca':isFree?'#f3f4f6':'#eff6ff'};
+                    color:${isSelected?'#fff':rented?'#7f1d1d':isFree?'#d1d5db':'#1e3a8a'};
+                    border:2px solid ${isSelected?'#d97706':rented?'#f87171':isFree?'#e5e7eb':'#bfdbfe'};
+                    opacity:${rented?'0.7':'1'};
+                    text-decoration:${rented?'line-through':'none'};">
+                    ${ch}
                   </span>`;
                 }).join('')}
               </div>
