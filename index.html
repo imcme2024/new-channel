@@ -426,7 +426,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v20</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v21</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
@@ -798,7 +798,7 @@ function renderStep1(){
 function renderStep2(){
   return`<div>
     <div class="info-box" style="font-size:13px;line-height:1.8;">
-      📍 <strong>${wardsConfig[state.currentRental.wardKey].name}</strong> — ch <strong>${state.currentRental.channel}</strong>
+      📍 <strong>${state.currentRental.wardKey==='OTHER'?(state.currentRental.otherDeptName||'その他'):wardsConfig[state.currentRental.wardKey].name}</strong>${state.currentRental.wardKey!=='OTHER'?` — ch <strong>${state.currentRental.channel}</strong>`:''}
       ${state.currentRental.rentalTxId?` ／ 送信機: <strong>${state.currentRental.rentalTxId}</strong>`:''}
     </div>
     <div class="form-group">
