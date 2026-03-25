@@ -331,7 +331,11 @@ function nextRentalStep(){
 }
 function confirmRental(){
   const id='R'+Date.now();
-  state.rentals[id]={...state.currentRental,rentalId:id,rentalDate:new Date().toISOString(),status:'confirmed'};
+  const r={...state.currentRental};
+  if(r.rentalTxId==='臨時'&&r.rentalTxNote&&r.rentalTxNote.trim()){
+    r.rentalTxId=`臨時 (${r.rentalTxNote.trim()})`;
+  }
+  state.rentals[id]={...r,rentalId:id,rentalDate:new Date().toISOString(),status:'confirmed'};
   saveData();state.showModal=false;render();
 }
 function launchChannelApp(n){
@@ -410,7 +414,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v18</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v19</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
