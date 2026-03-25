@@ -231,7 +231,7 @@ let state={
   shortcutPath:'',shortcutName1:'アプリA',shortcutPath2:'',shortcutName2:'アプリB',
   rentals:{},rentalHistory:[],
   showModal:false,modalType:'',rentalStep:1,
-  currentRental:{wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',rentalTxNote:'',returnStaff:'',status:'pending'},
+  currentRental:{wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',rentalTxNote:'',returnStaff:'',otherDeptName:'',status:'pending'},
   emergencyPopupDismissed:false,emergencyStaff:'',
   settingsMasterTab:'staff',settingsWardFilter:'W7',
   chError:'',showChList:false
@@ -312,20 +312,32 @@ function validateChannel(){
   state.chError='';state.currentRental.monitorId=found.id;render();
 }
 function startRental(){
-  state.currentRental={wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',rentalTxNote:'',returnStaff:'',status:'pending'};
+  state.currentRental={wardKey:'',monitorId:'',channel:'',deviceId:'',staffName:'',transmitterId:'',rentalTxId:'',rentalTxNote:'',returnStaff:'',otherDeptName:'',status:'pending'};
   state.chError='';state.showChList=false;state.rentalStep=1;state.modalType='rental';state.showModal=true;render();
 }
 function nextRentalStep(){
+  const isOther=state.currentRental.wardKey==='OTHER';
   if(state.rentalStep===1){
     if(!state.currentRental.wardKey){alert('病棟を選択してください');return;}
-    if(!state.currentRental.channel){state.chError='チャンネル番号を入力してください';render();return;}
-    if(!state.currentRental.monitorId){validateChannel();if(!state.currentRental.monitorId)return;}
-    state.rentalStep=2;
+    if(isOther){
+      if(!state.currentRental.otherDeptName||!state.currentRental.otherDeptName.trim()){alert('部署名を入力してください');return;}
+      state.rentalStep=2;
+    }else{
+      if(!state.currentRental.channel){state.chError='チャンネル番号を入力してください';render();return;}
+      if(!state.currentRental.monitorId){validateChannel();if(!state.currentRental.monitorId)return;}
+      state.rentalStep=2;
+    }
   }else if(state.rentalStep===2){
     if(!state.currentRental.staffName){alert('対応者を選択してください');return;}
-    state.currentRental.deviceId=state.currentRental.rentalTxId||'—';
-    state.currentRental.transmitterId=getWardTxId(state.currentRental.wardKey,state.currentRental.monitorId,state.currentRental.channel);
-    state.rentalStep=3;
+    if(isOther){
+      state.currentRental.deviceId=state.currentRental.rentalTxId||'—';
+      state.currentRental.transmitterId='—';
+      state.rentalStep=4;
+    }else{
+      state.currentRental.deviceId=state.currentRental.rentalTxId||'—';
+      state.currentRental.transmitterId=getWardTxId(state.currentRental.wardKey,state.currentRental.monitorId,state.currentRental.channel);
+      state.rentalStep=3;
+    }
   }else if(state.rentalStep===3){state.rentalStep=4;}
   render();
 }
@@ -355,7 +367,7 @@ function confirmReturn(){
 function exportHistoryCSV(){
   if(!state.rentalHistory.length){alert('エクスポートする履歴がありません');return;}
   const headers=['機器ID','病棟','チャンネル','預かり送信機','貸出用送信機','対応者','貸出日時','返却日時','返却者'];
-  const rows=state.rentalHistory.map(h=>[h.deviceId,wardsConfig[h.wardKey].name,h.channel,h.transmitterId||'',h.rentalTxId||'',h.staffName||'',new Date(h.rentalDate).toLocaleString('ja-JP'),new Date(h.returnDate).toLocaleString('ja-JP'),h.returnStaff||'']);
+  const rows=state.rentalHistory.map(h=>[h.deviceId,(h.wardKey==='OTHER'?(h.otherDeptName||'その他'):wardsConfig[h.wardKey].name),h.channel,h.transmitterId||'',h.rentalTxId||'',h.staffName||'',new Date(h.rentalDate).toLocaleString('ja-JP'),new Date(h.returnDate).toLocaleString('ja-JP'),h.returnStaff||'']);
   const csv='\uFEFF'+[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:`貸出履歴_${new Date().toISOString().split('T')[0]}.csv`}).click();
 }
@@ -414,7 +426,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v19</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v20</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
@@ -441,18 +453,20 @@ function renderRentalTab(){
   if(!active.length)return`<div style="text-align:center;padding:32px;color:#9ca3af;">現在貸出中の機器はありません</div>`;
   return`<div style="display:table;width:100%;border-collapse:separate;border-spacing:0 6px;">
     ${active.map(r=>{
-      const ward=wardsConfig[r.wardKey],ov=isOverdue(r.rentalDate),days=getDaysRented(r.rentalDate);
-      const wc=WARD_COLORS[r.wardKey]||{bg:'#f3f4f6',text:'#374151',border:'#e5e7eb'};
+      const isOther=r.wardKey==='OTHER';
+      const ward=isOther?null:wardsConfig[r.wardKey],ov=isOverdue(r.rentalDate),days=getDaysRented(r.rentalDate);
+      const wc=isOther?{bg:'#f3f4f6',text:'#374151',border:'#e5e7eb'}:WARD_COLORS[r.wardKey]||{bg:'#f3f4f6',text:'#374151',border:'#e5e7eb'};
+      const wardLabel=isOther?(r.otherDeptName||'その他'):ward.name;
       return`<div class="rental-card ${ov?'rental-card-overdue':''}" style="display:table-row;" onclick="startReturn('${r.rentalId}')">
         <div style="display:table-cell;vertical-align:middle;padding:12px 10px 12px 14px;width:1%;white-space:nowrap;">
           <span style="font-size:22px;font-weight:900;color:#111827;">${r.rentalTxId||'—'}</span>
           ${ov?`<span class="overdue-badge">⚠️${days}日</span>`:''}
         </div>
         <div style="display:table-cell;vertical-align:middle;padding:12px 10px;width:1%;white-space:nowrap;">
-          <span style="background:${wc.bg};color:${wc.text};border:1.5px solid ${wc.border};padding:3px 10px;border-radius:8px;font-weight:700;font-size:15px;">${ward.name}</span>
+          <span style="background:${wc.bg};color:${wc.text};border:1.5px solid ${wc.border};padding:3px 10px;border-radius:8px;font-weight:700;font-size:15px;">${wardLabel}</span>
         </div>
         <div style="display:table-cell;vertical-align:middle;padding:12px 10px;width:1%;white-space:nowrap;">
-          <span style="font-size:18px;font-weight:900;color:#f59e0b;">ch ${r.channel}</span>
+          ${isOther?'<span style="font-size:13px;color:#9ca3af;">ch なし</span>':`<span style="font-size:18px;font-weight:900;color:#f59e0b;">ch ${r.channel}</span>`}
         </div>
         <div style="display:table-cell;vertical-align:middle;padding:12px 10px;width:1%;white-space:nowrap;">
           <span style="font-size:14px;color:#374151;">預: </span><span class="tx-badge" style="font-size:14px;">${r.transmitterId}</span>
@@ -531,7 +545,7 @@ function renderHistoryTab(){
   </div>
   ${!state.rentalHistory.length?`<div style="text-align:center;padding:32px;color:#9ca3af;">履歴はありません</div>`
   :`<table class="history-table"><thead><tr><th>機器ID</th><th>病棟</th><th>ch</th><th>預かり送信機</th><th>貸出日</th><th>返却日</th><th>対応者</th><th>返却者</th></tr></thead><tbody>
-  ${state.rentalHistory.map(h=>`<tr><td>${h.deviceId}</td><td>${wardsConfig[h.wardKey].name}</td><td>${h.channel}</td><td><span class="tx-badge">${h.transmitterId}</span></td><td>${new Date(h.rentalDate).toLocaleDateString('ja-JP')}</td><td>${new Date(h.returnDate).toLocaleDateString('ja-JP')}</td><td>${h.staffName||'—'}</td><td>${h.returnStaff||'—'}</td></tr>`).join('')}
+  ${state.rentalHistory.map(h=>`<tr><td>${h.deviceId}</td><td>${h.wardKey==='OTHER'?(h.otherDeptName||'その他'):wardsConfig[h.wardKey].name}</td><td>${h.channel}</td><td><span class="tx-badge">${h.transmitterId}</span></td><td>${new Date(h.rentalDate).toLocaleDateString('ja-JP')}</td><td>${new Date(h.returnDate).toLocaleDateString('ja-JP')}</td><td>${h.staffName||'—'}</td><td>${h.returnStaff||'—'}</td></tr>`).join('')}
   </tbody></table>`}`;
 }
 
@@ -720,9 +734,23 @@ function renderStep1(){
           <div class="sc-sub">病棟</div>
           <div class="sc-check">✓</div>
         </div>`).join('')}
+        <div class="sel-card ${state.currentRental.wardKey==='OTHER'?'sel-selected':''}"
+          style="background:${state.currentRental.wardKey==='OTHER'?'#374151':'#f9fafb'};border-color:${state.currentRental.wardKey==='OTHER'?'#111827':'#e5e7eb'};"
+          onclick="state.currentRental.wardKey='OTHER';state.currentRental.channel='';state.currentRental.monitorId='';state.chError='';state.showChList=false;render()">
+          <div class="sc-label" style="color:${state.currentRental.wardKey==='OTHER'?'#fff':'#374151'};">その他</div>
+          <div class="sc-sub" style="color:${state.currentRental.wardKey==='OTHER'?'rgba(255,255,255,0.8)':'#9ca3af'};">部署など</div>
+          <div class="sc-check" style="color:#fff;">✓</div>
+        </div>
       </div>
+      ${state.currentRental.wardKey==='OTHER'?`
+      <input type="text" class="form-input" style="margin-top:10px;font-size:15px;font-weight:700;"
+        placeholder="部署名を入力（例: 化学療法室）"
+        value="${state.currentRental.otherDeptName||''}"
+        oninput="state.currentRental.otherDeptName=this.value;">
+      `:''}
     </div>
-    <div class="form-group">
+    ${state.currentRental.wardKey==='OTHER'?'':``}
+    <div class="form-group" style="display:${state.currentRental.wardKey==='OTHER'?'none':'block'};">
       <label class="form-label">📺 チャンネル番号を入力</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
         <div>
@@ -819,11 +847,11 @@ function renderStep4(){
   return`<div>
     <div class="info-box"><h4 style="font-weight:700;margin-bottom:10px;">貸出内容確認</h4>
       <div style="line-height:2;font-size:13px;">
-        <div><strong>病棟:</strong> ${wardsConfig[state.currentRental.wardKey].name}</div>
-        <div><strong>チャンネル:</strong> ${state.currentRental.channel}</div>
+        <div><strong>病棟:</strong> ${state.currentRental.wardKey==='OTHER'?(state.currentRental.otherDeptName||'その他'):wardsConfig[state.currentRental.wardKey].name}</div>
+        ${state.currentRental.wardKey!=='OTHER'?`<div><strong>チャンネル:</strong> ${state.currentRental.channel}</div>`:''}
         <div><strong>貸出用送信機:</strong> <span class="tx-badge">${state.currentRental.rentalTxId||'—'}</span></div>
         <div><strong>対応者:</strong> ${state.currentRental.staffName}</div>
-        <div><strong>預かり送信機:</strong> <span class="tx-badge">${state.currentRental.transmitterId}</span></div>
+        ${state.currentRental.wardKey!=='OTHER'?`<div><strong>預かり送信機:</strong> <span class="tx-badge">${state.currentRental.transmitterId}</span></div>`:''}
       </div>
     </div>
     <div style="display:flex;gap:8px;">
@@ -834,7 +862,8 @@ function renderStep4(){
 }
 
 function renderReturnModal(){
-  const ward=wardsConfig[state.currentRental.wardKey];
+  const isOtherReturn=state.currentRental.wardKey==='OTHER';
+  const ward=isOtherReturn?{name:state.currentRental.otherDeptName||'その他'}:wardsConfig[state.currentRental.wardKey];
   return`<div class="modal"><div class="modal-content">
     <div class="modal-header"><h3 class="modal-title">返却処理</h3><button class="btn btn-gray" onclick="state.showModal=false;render()">✕</button></div>
     <div class="info-box">
