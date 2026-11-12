@@ -329,6 +329,7 @@ function startRental(){
 function nextRentalStep(){
   const noChWard=state.currentRental.wardKey==='OTHER'||state.currentRental.wardKey==='CHEMO';
   if(state.rentalStep===1){
+    if(state.currentRental.rentalTxId==='臨時'&&!(state.currentRental.rentalTxNote||'').trim()){alert('臨時送信機の識別名を入力してください');const e=document.getElementById('temp-note-input');if(e)e.focus();return;}
     if(!state.currentRental.wardKey){alert('病棟を選択してください');return;}
     if(state.currentRental.wardKey==='OTHER'){
       if(!state.currentRental.otherDeptName||!state.currentRental.otherDeptName.trim()){alert('部署名を入力してください');return;}
@@ -451,7 +452,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v23</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v24</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
@@ -771,13 +772,13 @@ function renderStep1(){
             <div class="sc-check">✓</div>
           </div>`;
         }).join('')}
-        <div class="sel-card txc txc-temp ${state.currentRental.rentalTxId==='臨時'?'sel-selected':''}" onclick="state.currentRental.rentalTxId='臨時';render()">
+        <div class="sel-card txc txc-temp ${state.currentRental.rentalTxId==='臨時'?'sel-selected':''}" onclick="state.currentRental.rentalTxId='臨時';render();setTimeout(()=>{const e=document.getElementById('temp-note-input');if(e)e.focus();},0)">
           <div class="sc-label" style="color:${state.currentRental.rentalTxId==='臨時'?'#6d28d9':'#9ca3af'};">臨時</div>
           <div class="sc-sub">追加貸出用</div>
           <div class="sc-check" style="color:#8b5cf6;">✓</div>
         </div>
       </div>
-      ${state.currentRental.rentalTxId==='臨時'?`<input type="text" class="form-input" style="margin-top:8px;font-size:14px;" placeholder="臨時送信機の識別名（任意）" oninput="state.currentRental.rentalTxNote=this.value;">`:''}
+      ${state.currentRental.rentalTxId==='臨時'?`<div style="margin-top:8px;"><label style="display:block;font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:4px;">臨時送信機の識別名（必須）</label><input type="text" id="temp-note-input" class="form-input" style="font-size:14px;border:3px solid #a78bfa;background:#f5f3ff;" placeholder="例: TX-999" value="${(state.currentRental.rentalTxNote||'').replace(/"/g,'&quot;')}" oninput="state.currentRental.rentalTxNote=this.value;"></div>`:''}
     </div>`:''}
     <div class="form-group">
       <label class="form-label">🏥 貸出病棟</label>
