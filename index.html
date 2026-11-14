@@ -329,6 +329,7 @@ function startRental(){
 function nextRentalStep(){
   const noChWard=state.currentRental.wardKey==='OTHER'||state.currentRental.wardKey==='CHEMO';
   if(state.rentalStep===1){
+    if(!state.currentRental.rentalTxId){alert('貸出用送信機を選択してください');return;}
     if(state.currentRental.rentalTxId==='臨時'&&!(state.currentRental.rentalTxNote||'').trim()){alert('臨時送信機の識別名を入力してください');const e=document.getElementById('temp-note-input');if(e)e.focus();return;}
     if(!state.currentRental.wardKey){alert('病棟を選択してください');return;}
     if(state.currentRental.wardKey==='OTHER'){
@@ -452,7 +453,7 @@ function render(){
   document.getElementById('app').innerHTML=`
     ${checkWeeklyReview()?`<div class="weekly-check-banner">📋 週次チェック！貸出状況を確認してください<button class="btn btn-success" style="padding:7px 14px;font-size:13px;" onclick="markWeeklyCheckDone();render()">確認完了</button></div>`:''}
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;margin-bottom:10px;">
-      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v24</span></div>
+      <div class="title">📱 モニタ貸出管理 <span style="font-size:13px;font-weight:400;color:#9ca3af;">v25</span></div>
       <button class="btn btn-emergency" onclick="openEmergencyModal()">🚨 緊急アクセス</button>
     </div>
     <div class="inline-form-card">
